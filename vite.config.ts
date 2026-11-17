@@ -28,6 +28,9 @@ function validateTariffs(): Plugin {
 
 // https://vite.dev/config/
 export default defineConfig({
+  // Относительные пути к ресурсам: сайт работает из любой папки —
+  // на GitHub Pages (/calculator-laser-cut/), на сайте цеха или в iframe.
+  base: './',
   plugins: [validateTariffs(), react()],
   test: {
     include: ['tests/**/*.test.ts'],
