@@ -1,0 +1,105 @@
+{
+  "version": 1,
+  "currency": "RUB",
+  "updatedAt": "2026-11-17",
+  "source": "Скриншоты прайса: docs/source/tariff-cutting-steel.png, docs/source/tariff-bending.png",
+  "materials": [
+    {
+      "id": "steel_carbon",
+      "name": "Сталь горячекатаная и холоднокатаная",
+      "grades": ["08кп", "08пс", "Ст3", "Ст5", "Ст20", "Ст35", "Ст40Х", "Ст45", "09Г2С"],
+      "cutting": {
+        "cutUnit": "RUB_per_m",
+        "pierceUnit": "RUB_per_piece",
+        "altNote": "Поля cutAlt / pierceAlt — значения со звёздочкой (*) из прайса. Их смысл пока не известен (вопрос Q-1 в docs/TZ.md). До уточнения расчёт идёт по основным значениям cut / pierce.",
+        "rows": [
+          { "thickness": 0.5, "cut": 83, "pierce": 18 },
+          { "thickness": 0.8, "cut": 83, "pierce": 18 },
+          { "thickness": 1.0, "cut": 83, "pierce": 18 },
+          { "thickness": 1.5, "cut": 83, "pierce": 18 },
+          { "thickness": 1.6, "cut": 83, "pierce": 18 },
+          { "thickness": 2.0, "cut": 98, "pierce": 18 },
+          { "thickness": 2.5, "cut": 105, "pierce": 20 },
+          { "thickness": 3.0, "cut": 113, "pierce": 21 },
+          { "thickness": 4.0, "cut": 135, "pierce": 26 },
+          { "thickness": 5.0, "cut": 150, "pierce": 26 },
+          { "thickness": 6.0, "cut": 165, "pierce": 27 },
+          { "thickness": 8.0, "cut": 233, "pierce": 30 },
+          { "thickness": 10.0, "cut": 300, "pierce": 33, "cutAlt": 330, "pierceAlt": 36 },
+          { "thickness": 12.0, "cut": 398, "pierce": 33, "cutAlt": 435, "pierceAlt": 39 },
+          { "thickness": 14.0, "cut": 420, "pierce": 38, "cutAlt": 507, "pierceAlt": 53 },
+          { "thickness": 16.0, "cut": 578, "pierce": 60, "cutAlt": 705, "pierceAlt": 72 }
+        ]
+      }
+    }
+  ],
+  "bending": {
+    "unit": "RUB_per_bend",
+    "notes": [
+      "Цена указана за один гиб. Ячейка null — цены нет в прайсе: калькулятор показывает «цена по запросу».",
+      "Колонка (тираж) выбирается по ОБЩЕМУ числу гибов в заказе = гибов на деталь × количество деталей. Это предположение, вопрос Q-5.",
+      "Диапазон толщины выбирается по правилу: первый диапазон, у которого thickness <= maxThickness. Значит 2.5 мм попадает в «3–4». Это предположение, вопрос Q-4.",
+      "Диапазон длины гиба: length <= maxLength первого подходящего диапазона (500 → L1, 501 → L2). Длина больше 2500 мм — «по запросу». Предположение, вопрос Q-6."
+    ],
+    "quantityBrackets": [
+      { "id": "q1", "label": "до 50 гибов", "min": 1, "max": 50 },
+      { "id": "q2", "label": "51–100 гибов", "min": 51, "max": 100 },
+      { "id": "q3", "label": "101–500 гибов", "min": 101, "max": 500 },
+      { "id": "q4", "label": "501–1000 гибов", "min": 501, "max": 1000 },
+      { "id": "q5", "label": "от 1001 гиба", "min": 1001, "max": null }
+    ],
+    "thicknessBands": [
+      { "id": "t1", "label": "до 1 мм", "maxThickness": 1 },
+      { "id": "t2", "label": "1–2 мм", "maxThickness": 2 },
+      { "id": "t3", "label": "3–4 мм", "maxThickness": 4 },
+      { "id": "t4", "label": "5–6 мм", "maxThickness": 6 },
+      { "id": "t5", "label": "7–8 мм", "maxThickness": 8 }
+    ],
+    "lengthRanges": [
+      {
+        "id": "L1",
+        "label": "до 500 мм",
+        "maxLength": 500,
+        "assumed": true,
+        "assumedNote": "Заголовок этого блока и строки «до 1», «1–2», «3–4» на скриншоте обрезаны. Видны только строки 5–6 и 7–8. Вопрос Q-3.",
+        "prices": {
+          "t1": null,
+          "t2": null,
+          "t3": null,
+          "t4": [70, 62, 58, 54, 45],
+          "t5": [80, 70, 62, 58, 54]
+        }
+      },
+      {
+        "id": "L2",
+        "label": "от 500 до 1500 мм",
+        "maxLength": 1500,
+        "prices": {
+          "t1": [42, 38, 34, 30, 27],
+          "t2": [48, 42, 38, 32, 30],
+          "t3": [55, 50, 46, 40, 37],
+          "t4": [75, 65, 60, 55, 49],
+          "t5": [90, 85, 75, 70, 60]
+        }
+      },
+      {
+        "id": "L3",
+        "label": "от 1500 до 2500 мм",
+        "maxLength": 2500,
+        "assumedNote": "Строки 5–6 и 7–8 на скриншоте обрезаны. Вопрос Q-3.",
+        "prices": {
+          "t1": [48, 42, 38, 34, 30],
+          "t2": [52, 46, 42, 38, 34],
+          "t3": [60, 55, 50, 45, 40],
+          "t4": null,
+          "t5": null
+        }
+      }
+    ]
+  },
+  "order": {
+    "includeMaterialCost": false,
+    "minOrderRub": null,
+    "notes": "Стоимость металла и минимальная сумма заказа уточняются (вопросы Q-7, Q-8). Пока не учитываются."
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "_note": "Эталонные значения для тестов разбора DXF. Длина в мм, допуск ±0.01 мм. Файлы минимальные (только HEADER + ENTITIES), единицы — мм ($INSUNITS = 4).",
+  "01_plate_rect_2holes.dxf": {
+    "description": "Пластина 100×50 из 4 отрезков LINE + 2 отверстия CIRCLE R5",
+    "cutLengthMm": 362.832,
+    "closedContours": 3,
+    "openContours": 0,
+    "pierces": 3,
+    "bbox": { "width": 100, "height": 50 },
+    "warnings": []
+  },
+  "02_slot_lwpolyline_bulge.dxf": {
+    "description": "Паз-обраунд: замкнутая LWPOLYLINE (2 прямых по 100 мм + 2 полуокружности R20 через bulge = 1) + отверстие CIRCLE R10 + TEXT, который нужно игнорировать",
+    "cutLengthMm": 388.496,
+    "closedContours": 2,
+    "openContours": 0,
+    "pierces": 2,
+    "bbox": { "width": 140, "height": 40 },
+    "warnings": []
+  },
+  "03_open_contour.dxf": {
+    "description": "Две LINE, образующие незамкнутую ломаную (0,0)-(50,0)-(50,30)",
+    "cutLengthMm": 80,
+    "closedContours": 0,
+    "openContours": 1,
+    "pierces": 1,
+    "bbox": { "width": 50, "height": 30 },
+    "warnings": ["OPEN_CONTOUR"]
+  }
+}
