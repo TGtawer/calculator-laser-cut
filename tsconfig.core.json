@@ -1,0 +1,11 @@
+{
+  // Ядро расчёта: без DOM и без React, чтобы его можно было запустить на сервере.
+  // Обращение к window/document/fetch и т.п. в src/core даст ошибку компиляции.
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.core.tsbuildinfo",
+    "lib": ["ES2023"],
+    "types": []
+  },
+  "include": ["src/core"]
+}

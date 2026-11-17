@@ -1,0 +1,52 @@
+:root {
+  /* Графит + красный акцент (ТЗ, раздел 6) */
+  --color-text: #1f2328;
+  --color-muted: #5b6168;
+  --color-bg: #f4f5f6;
+  --color-surface: #ffffff;
+  --color-border: #d7dade;
+  --color-accent: #c62828;
+
+  --font-sans: system-ui, 'Segoe UI', Roboto, sans-serif;
+
+  font: 16px/1.5 var(--font-sans);
+  color: var(--color-text);
+  background: var(--color-bg);
+  -webkit-text-size-adjust: 100%;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  background: var(--color-bg);
+}
+
+.page {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 24px 16px 48px;
+}
+
+h1 {
+  margin: 0 0 16px;
+  font-size: 1.5rem;
+  line-height: 1.25;
+}
+
+.muted {
+  color: var(--color-muted);
+}
+
+.disclaimer {
+  margin-top: 32px;
+  padding-top: 16px;
+  border-top: 1px solid var(--color-border);
+  color: var(--color-muted);
+  font-size: 0.875rem;
+}

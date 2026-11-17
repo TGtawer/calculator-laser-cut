@@ -1,0 +1,10 @@
+{
+  // Тесты ядра: Node (чтение фикстур с диска), без DOM.
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.test.tsbuildinfo",
+    "lib": ["ES2023"],
+    "types": ["node"]
+  },
+  "include": ["tests"]
+}
