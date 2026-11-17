@@ -10,6 +10,11 @@
     "moduleDetection": "force",
     "noEmit": true,
 
+    /* Свои типы для dxf-parser — см. комментарий в файле */
+    "paths": {
+      "dxf-parser": ["./src/core/dxf/vendor/dxf-parser.d.ts"]
+    },
+
     /* Строгость */
     "strict": true,
     "noUncheckedIndexedAccess": true,

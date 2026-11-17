@@ -12,6 +12,7 @@
     "lint": "oxlint"
   },
   "dependencies": {
+    "dxf-parser": "^1.1.2",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
     "zod": "^4.6.7"
