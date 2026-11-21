@@ -2,9 +2,9 @@ import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import tariffsJson from '../../data/tariffs.json'
 import { analyzeDxfText } from '../../src/core/dxf/analyze.ts'
-import { formatDecimal, formatRub, plural } from '../../src/core/format.ts'
+import { formatDecimal, formatRub, formatRubWhole, plural } from '../../src/core/format.ts'
 import { type QuoteInput, calculateQuote } from '../../src/core/pricing/quote.ts'
-import { DISCLAIMER, INCOMPLETE_NOTE, quoteLines, quoteText } from '../../src/core/pricing/summary.ts'
+import { DISCLAIMER, INCOMPLETE_NOTE, minimumOrderMessage, quoteLines, quoteText } from '../../src/core/pricing/summary.ts'
 import { parseTariffs } from '../../src/core/pricing/tariffs.ts'
 
 const tariffs = parseTariffs(tariffsJson)
@@ -28,6 +28,12 @@ describe('форматирование (ТЗ 6)', () => {
     expect(plain(formatRub(44108))).toBe('441,08 ₽')
     expect(plain(formatRub(5))).toBe('0,05 ₽')
     expect(plain(formatRub(123456789))).toBe('1 234 567,89 ₽')
+  })
+
+  it('целые рубли — без копеек', () => {
+    expect(plain(formatRubWhole(104000))).toBe('1 040 ₽')
+    expect(plain(formatRubWhole(44200))).toBe('442 ₽')
+    expect(plain(formatRubWhole(500000))).toBe('5 000 ₽')
   })
 
   it('числа', () => {
@@ -91,7 +97,8 @@ describe('текст «Скопировать расчёт»', () => {
         'Резка: 362,8 мм × 113,00 ₽/м = 41,00 ₽',
         'Прожиги: 3 × 21,00 ₽ = 63,00 ₽',
         'За деталь: 104,00 ₽',
-        'Итого за 10 шт.: 1 040,00 ₽',
+        'Итого за 10 шт.: 1 040 ₽',
+        plain(minimumOrderMessage(500000)),
         '',
         DISCLAIMER,
       ].join('\n'),
@@ -109,10 +116,37 @@ describe('текст «Скопировать расчёт»', () => {
       }),
     )
     expect(text).toContain('Гибка: 2 гиба — по запросу\n  Для этой толщины и длины гиба цены в прайсе нет — по запросу')
-    expect(text).toContain(`Итого за 10 шт.: 1 745,40 ₽\n${INCOMPLETE_NOTE}`)
+    expect(text).toContain(`Итого за 10 шт.: 1 746 ₽\n${INCOMPLETE_NOTE}`)
     expect(text).toContain(
       'Замечания к чертежу:\n— В чертеже есть незамкнутые контуры — проверьте файл\n— Удалены совпадающие дубли элементов: 2',
     )
     expect(text.endsWith(DISCLAIMER)).toBe(true)
+  })
+
+  it('итог ниже минимума — предупреждение в тексте', () => {
+    const q = quote({ quantity: 1, cutLengthMm: 100, pierces: 0 })
+    const text = plain(
+      quoteText({
+        quote: q,
+        bendingTariffs: tariffs.bending,
+        fileName: 'part.dxf',
+        analysis: { bbox: { minX: 0, minY: 0, width: 50, height: 30 }, warnings: [], duplicatesRemoved: 0 },
+      }),
+    )
+    expect(text).toContain(`Итого за 1 шт.: 12 ₽\n${plain(minimumOrderMessage(500000))}`)
+  })
+
+  it('итог выше минимума — предупреждения нет', () => {
+    const q = quote({ quantity: 50, cutLengthMm: 1000, pierces: 2 })
+    const text = plain(
+      quoteText({
+        quote: q,
+        bendingTariffs: tariffs.bending,
+        fileName: 'part.dxf',
+        analysis: { bbox: { minX: 0, minY: 0, width: 50, height: 30 }, warnings: [], duplicatesRemoved: 0 },
+      }),
+    )
+    expect(text).toContain('Итого за 50 шт.: 7 750 ₽')
+    expect(text).not.toContain('ниже минимальной')
   })
 })

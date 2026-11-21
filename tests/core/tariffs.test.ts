@@ -36,9 +36,10 @@ describe('data/tariffs.json', () => {
     const t = parseTariffs(tariffsJson)
     const rows = t.materials[0]!.cutting.rows
 
-    expect(rows).toHaveLength(16)
+    expect(rows).toHaveLength(13)
     expect(rows[0]).toEqual({ thickness: 0.5, cut: 83, pierce: 18 })
-    expect(rows.at(-1)).toEqual({ thickness: 16, cut: 578, pierce: 60, cutAlt: 705, pierceAlt: 72 })
+    expect(rows.at(-1)).toEqual({ thickness: 10, cut: 300, pierce: 33 })
+    expect(t.order.minOrderRub).toBe(5000)
 
     expect(t.bending.quantityBrackets.map((b) => b.id)).toEqual(['q1', 'q2', 'q3', 'q4', 'q5'])
     expect(t.bending.quantityBrackets.at(-1)!.max).toBeNull()
@@ -63,6 +64,12 @@ describe('parseTariffs: ошибки в тарифах', () => {
     row['pirce'] = row['pierce']
     delete row['pierce']
     expectInvalid(t, 'pirce', 'pierce')
+  })
+
+  it('отклоняет неизвестное поле в строке резки (например, старое cutAlt)', () => {
+    const t = tariffsCopy()
+    ;(t.materials[0]!.cutting.rows[0] as Record<string, unknown>)['cutAlt'] = 100
+    expectInvalid(t, 'cutAlt')
   })
 
   it('отклоняет отрицательную цену', () => {

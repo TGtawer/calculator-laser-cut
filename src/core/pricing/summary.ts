@@ -1,5 +1,5 @@
 import { warningMessage } from '../dxf/messages.ts'
-import { formatDecimal, formatRub, plural } from '../format.ts'
+import { formatDecimal, formatRub, formatRubWhole, plural } from '../format.ts'
 import type { DxfAnalysis } from '../types.ts'
 import { bendingOnRequestMessage } from './bending.ts'
 import type { Kopecks } from './common.ts'
@@ -17,6 +17,10 @@ export const DISCLAIMER = 'Расчёт ориентировочный. Окон
 export const ON_REQUEST = 'по запросу'
 
 export const INCOMPLETE_NOTE = 'Итог неполный: часть позиций — по запросу. Их стоимость сообщит менеджер.'
+
+/** Предупреждение, если полный итог ниже минимальной суммы заказа (Q-8). */
+export const minimumOrderMessage = (minimumKopecks: Kopecks): string =>
+  `Сумма заказа ниже минимальной — ${formatRubWhole(minimumKopecks)}. Менеджер уточнит условия.`
 
 const BENDS = ['гиб', 'гиба', 'гибов'] as const
 
@@ -106,7 +110,10 @@ export function quoteText({ quote, bendingTariffs, fileName, analysis }: QuoteTe
     if (item.note) out.push(`  ${item.note}`)
   }
   out.push(`За деталь: ${formatRub(quote.pricePerPartKopecks)}`)
-  out.push(`Итого за ${quantity} шт.: ${formatRub(quote.totalKopecks)}`)
+  out.push(`Итого за ${quantity} шт.: ${formatRubWhole(quote.totalRoundedKopecks)}`)
+  if (quote.belowMinimum && quote.minimumOrderKopecks !== null) {
+    out.push(minimumOrderMessage(quote.minimumOrderKopecks))
+  }
   if (!quote.complete) out.push(INCOMPLETE_NOTE)
   if (analysis.warnings.length > 0) {
     out.push('', 'Замечания к чертежу:')

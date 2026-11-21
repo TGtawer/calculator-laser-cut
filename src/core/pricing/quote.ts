@@ -1,5 +1,5 @@
 import { type BendingCost, bendingCost } from './bending.ts'
-import { type Kopecks, PricingInputError, requireInteger } from './common.ts'
+import { type Kopecks, PricingInputError, requireInteger, roundUpToRuble, rubToKopecks } from './common.ts'
 import { type CuttingCost, cuttingCost } from './cutting.ts'
 import type { Material, Tariffs } from './tariffs.ts'
 
@@ -25,8 +25,17 @@ export type Quote = {
   bending: BendingCost | null
   /** Сумма известных статей на одну деталь, коп. */
   pricePerPartKopecks: Kopecks
-  /** Итог: pricePerPart × N, коп. */
+  /** Точная сумма заказа до округления, коп. */
   totalKopecks: Kopecks
+  /** Итог, округлённый вверх до целого рубля, коп. */
+  totalRoundedKopecks: Kopecks
+  /** Минимальная сумма заказа из тарифов, коп.; null — не задана. */
+  minimumOrderKopecks: Kopecks | null
+  /**
+   * true — полный итог ниже минимальной суммы заказа (Q-8).
+   * Для неполного расчёта не проверяется: неизвестные статьи могут поднять итог.
+   */
+  belowMinimum: boolean
   /**
    * false — часть статей «по запросу» (null в тарифах): итог неполный,
    * в него вошли только статьи с ценой.
@@ -38,14 +47,15 @@ export type Quote = {
  * Итоговый расчёт (ТЗ 5):
  *   pricePerPart = cutPerPart + piercePerPart + bendPerPart
  *   total        = pricePerPart × N
- * Статьи за штуку уже округлены до копеек, поэтому итог — точное целое.
+ *   totalRounded = округление total вверх до рубля
+ * Статьи за штуку уже округлены до копеек, поэтому total — точное целое.
  */
 export function calculateQuote(tariffs: Tariffs, input: QuoteInput): Quote {
-  // Вопросы ТЗ 8, вариант «по умолчанию»:
-  // TODO(Q-7): стоимость металла не учитывается (order.includeMaterialCost не применяется).
-  // TODO(Q-8): минимальной суммы заказа нет (order.minOrderRub не применяется).
-  // TODO(Q-9): итог округляется до копеек; до рубля или до 10 ₽ — после ответа.
-  // TODO(Q-10): разовой стоимости наладки и подготовки УП нет.
+  // Решения по вопросам ТЗ 8:
+  // Q-7: стоимость металла не учитывается.
+  // Q-8: минимальная сумма заказа берётся из тарифов (сейчас 5 000 ₽), ниже — предупреждение.
+  // Q-9: итог округляется вверх до рубля, сумма за деталь остаётся с копейками.
+  // Q-10: разовой наладки и подготовки УП нет.
   const material = tariffs.materials.find((m) => m.id === input.materialId)
   if (!material) throw new PricingInputError(`Материала «${input.materialId}» нет в тарифах`)
   requireInteger(input.quantity, 1, 'Количество деталей')
@@ -64,6 +74,11 @@ export function calculateQuote(tariffs: Tariffs, input: QuoteInput): Quote {
   const items = [cutting.cutPerPartKopecks, cutting.piercePerPartKopecks]
   if (bending) items.push(bending.perPartKopecks)
   const pricePerPartKopecks = items.reduce<number>((sum, item) => sum + (item ?? 0), 0)
+  const totalKopecks = pricePerPartKopecks * quantity
+  const totalRoundedKopecks = roundUpToRuble(totalKopecks)
+  const minimumOrderKopecks = tariffs.order.minOrderRub === null ? null : rubToKopecks(tariffs.order.minOrderRub)
+  const complete = items.every((item) => item !== null)
+  const belowMinimum = complete && minimumOrderKopecks !== null && totalRoundedKopecks < minimumOrderKopecks
 
   return {
     material,
@@ -71,7 +86,10 @@ export function calculateQuote(tariffs: Tariffs, input: QuoteInput): Quote {
     cutting,
     bending,
     pricePerPartKopecks,
-    totalKopecks: pricePerPartKopecks * quantity,
-    complete: items.every((item) => item !== null),
+    totalKopecks,
+    totalRoundedKopecks,
+    minimumOrderKopecks,
+    belowMinimum,
+    complete,
   }
 }

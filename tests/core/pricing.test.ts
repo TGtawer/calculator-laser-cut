@@ -10,7 +10,7 @@ import {
   findQuantityBracket,
   findThicknessBand,
 } from '../../src/core/pricing/bending.ts'
-import { PricingInputError, rubToKopecks } from '../../src/core/pricing/common.ts'
+import { PricingInputError, roundUpToRuble, rubToKopecks } from '../../src/core/pricing/common.ts'
 import { cuttingCost, cuttingThicknesses } from '../../src/core/pricing/cutting.ts'
 import { type QuoteInput, calculateQuote } from '../../src/core/pricing/quote.ts'
 import { type Tariffs, parseTariffs } from '../../src/core/pricing/tariffs.ts'
@@ -52,10 +52,12 @@ describe('контрольные примеры ТЗ 5.1', () => {
     expect(q.bending).toBeNull()
     expect(q.pricePerPartKopecks).toBe(10400)
     expect(q.totalKopecks).toBe(104000)
+    expect(q.totalRoundedKopecks).toBe(104000)
+    expect(q.belowMinimum).toBe(true) // 1 040 ₽ < 5 000 ₽
     expect(q.complete).toBe(true)
   })
 
-  it('пример 2: 02_slot_lwpolyline_bulge.dxf, 5 мм, 4 шт — итого 441,08 ₽', () => {
+  it('пример 2: 02_slot_lwpolyline_bulge.dxf, 5 мм, 4 шт — 441,08 ₽, итого 442 ₽', () => {
     const a = analyzeFixture('02_slot_lwpolyline_bulge.dxf')
     expect(a.cutLengthMm / 1000).toBeCloseTo(0.388496, 6)
     expect(a.pierces).toBe(2)
@@ -65,10 +67,12 @@ describe('контрольные примеры ТЗ 5.1', () => {
     expect(q.cutting.piercePerPartKopecks).toBe(5200) // 2 × 26 = 52,00 ₽
     expect(q.pricePerPartKopecks).toBe(11027)
     expect(q.totalKopecks).toBe(44108)
+    expect(q.totalRoundedKopecks).toBe(44200)
+    expect(q.belowMinimum).toBe(true) // 442 ₽ < 5 000 ₽
     expect(q.complete).toBe(true)
   })
 
-  it('пример 3: только гибка t = 3, Lb = 800, B = 2, N = 10 — 55 ₽/гиб, итого 1 100,00 ₽', () => {
+  it('пример 3: только гибка t = 3, Lb = 800, B = 2, N = 10 — 55 ₽/гиб, итого 1 100 ₽', () => {
     const b = bend({ thicknessMm: 3, bendLengthMm: 800, bendsPerPart: 2, quantity: 10 })
     expect(b.totalBends).toBe(20)
     expect(b.bracket?.id).toBe('q1')
@@ -83,6 +87,8 @@ describe('контрольные примеры ТЗ 5.1', () => {
     const q = calculateQuote(tariffs, quoteInput({ quantity: 10, bending: { bendsPerPart: 2, bendLengthMm: 800 } }))
     expect(q.pricePerPartKopecks).toBe(11000)
     expect(q.totalKopecks).toBe(110000)
+    expect(q.totalRoundedKopecks).toBe(110000)
+    expect(q.belowMinimum).toBe(true) // 1 100 ₽ < 5 000 ₽
     expect(q.complete).toBe(true)
   })
 
@@ -102,12 +108,14 @@ describe('контрольные примеры ТЗ 5.1', () => {
     expect(q.complete).toBe(false)
     expect(q.pricePerPartKopecks).toBe(23300 + 3000)
     expect(q.totalKopecks).toBe((23300 + 3000) * 10)
+    expect(q.totalRoundedKopecks).toBe((23300 + 3000) * 10)
+    expect(q.belowMinimum).toBe(false) // неполный итог с минимумом не сравнивается
   })
 
   it('пример 5: границы диапазонов', () => {
-    // TODO(Q-4): 2,5 мм — в «3–4».
+    // Q-4: толщина округляется вверх, 2,5 мм — в «3–4».
     expect(findThicknessBand(tariffs.bending, 2.5)?.id).toBe('t3')
-    // TODO(Q-6): 500 — «до 500».
+    // Q-6: 500 — «до 500» включительно.
     expect(findLengthRange(tariffs.bending, 500)?.id).toBe('L1')
     expect(findLengthRange(tariffs.bending, 501)?.id).toBe('L2')
     expect(findQuantityBracket(tariffs.bending, 50)?.id).toBe('q1')
@@ -137,17 +145,17 @@ describe('резка', () => {
   })
 
   it('цены берутся из строки своей толщины', () => {
-    const c = cuttingCost(material, { thicknessMm: 16, cutLengthMm: 1000, pierces: 2 })
-    expect(c.cutRateKopecks).toBe(57800)
-    expect(c.pierceRateKopecks).toBe(6000)
-    expect(c.cutPerPartKopecks).toBe(57800)
-    expect(c.piercePerPartKopecks).toBe(12000)
-  })
-
-  it('TODO(Q-1): значения со звёздочкой не участвуют в расчёте', () => {
-    const c = cuttingCost(material, { thicknessMm: 10, cutLengthMm: 1000, pierces: 1 })
+    const c = cuttingCost(material, { thicknessMm: 10, cutLengthMm: 1000, pierces: 2 })
     expect(c.cutRateKopecks).toBe(30000)
     expect(c.pierceRateKopecks).toBe(3300)
+    expect(c.cutPerPartKopecks).toBe(30000)
+    expect(c.piercePerPartKopecks).toBe(6600)
+  })
+
+  it('Q-1/Q-2: значения со звёздочкой и строки 12–16 мм не используются', () => {
+    expect(cuttingThicknesses(material)).not.toContain(12)
+    expect(cuttingThicknesses(material)).not.toContain(14)
+    expect(cuttingThicknesses(material)).not.toContain(16)
   })
 
   it('null в тарифе резки — «по запросу», итог неполный и без этой статьи', () => {
@@ -165,11 +173,50 @@ describe('резка', () => {
   it('список толщин — строго из тарифов', () => {
     expect(cuttingThicknesses(material)).toEqual(material.cutting.rows.map((r) => r.thickness))
     expect(cuttingThicknesses(material)[0]).toBe(0.5)
+    expect(cuttingThicknesses(material).at(-1)).toBe(10)
+  })
+})
+
+describe('округление итога и минимальный заказ', () => {
+  it('округление вверх до рубля', () => {
+    expect(roundUpToRuble(0)).toBe(0)
+    expect(roundUpToRuble(1)).toBe(100)
+    expect(roundUpToRuble(100)).toBe(100)
+    expect(roundUpToRuble(101)).toBe(200)
+    expect(roundUpToRuble(44108)).toBe(44200)
+  })
+
+  it('итог округляется вверх, точная сумма сохраняется', () => {
+    const q = calculateQuote(tariffs, quoteInput({ thicknessMm: 1, quantity: 3, cutLengthMm: 125 }))
+    expect(q.totalKopecks).toBe(3114) // 1 038 коп. × 3
+    expect(q.totalRoundedKopecks).toBe(3200)
+    expect(q.pricePerPartKopecks).toBe(1038)
+  })
+
+  it('минимум 5 000 ₽: ниже — предупреждение', () => {
+    const q = calculateQuote(tariffs, quoteInput({ thicknessMm: 3, quantity: 1, cutLengthMm: 100 }))
+    expect(q.minimumOrderKopecks).toBe(500000)
+    expect(q.totalRoundedKopecks).toBe(1200) // 11,30 ₽ → 12 ₽
+    expect(q.belowMinimum).toBe(true)
+  })
+
+  it('минимум достигнут — предупреждения нет', () => {
+    const q = calculateQuote(tariffs, quoteInput({ thicknessMm: 3, quantity: 50, cutLengthMm: 1000, pierces: 2 }))
+    expect(q.totalRoundedKopecks).toBe(775000) // 155 ₽ × 50 = 7 750 ₽
+    expect(q.belowMinimum).toBe(false)
+  })
+
+  it('минимум не задан в тарифах — проверки нет', () => {
+    const t = copy()
+    t.order.minOrderRub = null
+    const q = calculateQuote(t, quoteInput({ thicknessMm: 3, quantity: 1, cutLengthMm: 100 }))
+    expect(q.minimumOrderKopecks).toBeNull()
+    expect(q.belowMinimum).toBe(false)
   })
 })
 
 describe('гибка', () => {
-  it('TODO(Q-5): тираж — по всем гибам заказа: 3 гиба × 20 шт = 60 → q2', () => {
+  it('Q-5: тираж — по всем гибам заказа: 3 гиба × 20 шт = 60 → q2', () => {
     const b = bend({ thicknessMm: 3, bendLengthMm: 800, bendsPerPart: 3, quantity: 20 })
     expect(b.totalBends).toBe(60)
     expect(b.bracket?.id).toBe('q2')

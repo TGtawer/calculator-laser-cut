@@ -69,10 +69,6 @@ const cuttingRowSchema = z.strictObject({
   cut: priceSchema,
   /** Прожиг, ₽ за 1 шт. */
   pierce: priceSchema,
-  // TODO(Q-1): значения со звёздочкой из прайса. Смысл пока неизвестен,
-  // поэтому они только хранятся и в расчёте не участвуют.
-  cutAlt: priceSchema.optional(),
-  pierceAlt: priceSchema.optional(),
 })
 
 const materialSchema = z.strictObject({
@@ -82,7 +78,6 @@ const materialSchema = z.strictObject({
   cutting: z.strictObject({
     cutUnit: z.literal('RUB_per_m'),
     pierceUnit: z.literal('RUB_per_piece'),
-    altNote: z.string().optional(),
     rows: z
       .array(cuttingRowSchema)
       .min(1)
@@ -192,9 +187,9 @@ const bendingSchema = z
 // ---------- Заказ ----------
 
 const orderSchema = z.strictObject({
-  /** Учитывать ли стоимость металла (вопрос Q-7). */
+  /** Учитывать ли стоимость металла (Q-7: не учитывается). */
   includeMaterialCost: z.boolean(),
-  /** Минимальная сумма заказа в рублях; null — не задана (вопрос Q-8). */
+  /** Минимальная сумма заказа в рублях; null — не задана (Q-8: сейчас 5 000 ₽). */
   minOrderRub: rubSchema.nullable(),
   notes: z.string().optional(),
 })

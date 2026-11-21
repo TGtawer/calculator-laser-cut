@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
-import { formatRub } from '../core/format.ts'
+import { formatRub, formatRubWhole } from '../core/format.ts'
 import type { Quote } from '../core/pricing/quote.ts'
-import { INCOMPLETE_NOTE, type QuoteLine } from '../core/pricing/summary.ts'
+import { INCOMPLETE_NOTE, type QuoteLine, minimumOrderMessage } from '../core/pricing/summary.ts'
 
 type Props =
   /** Расчёта пока нет: что нужно сделать. */
@@ -109,8 +109,11 @@ export function QuoteResult(props: Props) {
           Итого за {quote.quantity} шт.
           {!quote.complete && <span className="badge">неполный</span>}
         </span>
-        <strong>{formatRub(quote.totalKopecks)}</strong>
+        <strong>{formatRubWhole(quote.totalRoundedKopecks)}</strong>
       </div>
+      {quote.belowMinimum && quote.minimumOrderKopecks !== null && (
+        <p className="alert alert--warn">{minimumOrderMessage(quote.minimumOrderKopecks)}</p>
+      )}
       {!quote.complete && <p className="alert alert--warn">{INCOMPLETE_NOTE}</p>}
 
       <CopyButton text={copyText} />

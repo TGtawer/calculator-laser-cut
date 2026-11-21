@@ -40,13 +40,11 @@ export type BendingCost = {
   onRequest: BendingOnRequestReason | null
 }
 
-// TODO(Q-4): толщины между диапазонами (2,5 мм) по этому правилу попадают в следующий («3–4»).
-/** Диапазон толщины: первый, где t <= maxThickness (ТЗ 5). */
+/** Диапазон толщины: первый, где t <= maxThickness. Q-4: 2,5 мм округляется вверх, в «3–4». */
 export const findThicknessBand = (tariffs: BendingTariffs, thicknessMm: number): ThicknessBand | null =>
   tariffs.thicknessBands.find((b) => thicknessMm <= b.maxThickness) ?? null
 
-// TODO(Q-6): граница включается в нижний диапазон: 500 мм — «до 500».
-/** Диапазон длины гиба: первый, где Lb <= maxLength (ТЗ 5). */
+/** Диапазон длины гиба: первый, где Lb <= maxLength. Q-6: 500 мм — «до 500» включительно. */
 export const findLengthRange = (tariffs: BendingTariffs, bendLengthMm: number): LengthRange | null =>
   tariffs.lengthRanges.find((r) => bendLengthMm <= r.maxLength) ?? null
 
@@ -67,7 +65,7 @@ export function bendingCost(tariffs: BendingTariffs, input: BendingInput): Bendi
   requireInteger(bendsPerPart, 1, 'Число гибов на деталь')
   requireInteger(quantity, 1, 'Количество деталей')
 
-  // TODO(Q-5): тираж считается по всем гибам заказа, а не по гибам на деталь.
+  // Q-5: тираж считается по всем гибам заказа, B × N.
   const totalBends = bendsPerPart * quantity
   const band = findThicknessBand(tariffs, thicknessMm)
   const range = findLengthRange(tariffs, bendLengthMm)

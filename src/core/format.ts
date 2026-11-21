@@ -11,10 +11,19 @@ const rubFormat = new Intl.NumberFormat('ru-RU', {
   maximumFractionDigits: 2,
 })
 
+const rubWholeFormat = new Intl.NumberFormat('ru-RU', {
+  style: 'currency',
+  currency: 'RUB',
+  maximumFractionDigits: 0,
+})
+
 const decimalFormats = new Map<number, Intl.NumberFormat>()
 
 /** Сумма в копейках → «1 040,00 ₽». */
 export const formatRub = (kopecks: number): string => rubFormat.format(kopecks / 100)
+
+/** Сумма в копейках → «442 ₽» без копеек. Для уже округлённых до рубля значений. */
+export const formatRubWhole = (kopecks: number): string => rubWholeFormat.format(kopecks / 100)
 
 /** Число с запятой и не больше maxFractionDigits знаков после неё: 362,8318 → «362,83». */
 export function formatDecimal(n: number, maxFractionDigits = 2): string {

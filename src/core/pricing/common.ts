@@ -6,6 +6,9 @@ export type Kopecks = number
 /** Цена из тарифов (рубли с точностью до копейки) → копейки. */
 export const rubToKopecks = (rub: number): Kopecks => Math.round(rub * 100)
 
+/** Округление вверх до целого рубля: 44 108 коп. → 44 200 коп. (442 ₽). */
+export const roundUpToRuble = (kopecks: Kopecks): Kopecks => Math.ceil(kopecks / 100) * 100
+
 /**
  * Неверные входные данные расчёта: толщины нет в тарифах, количество не целое и т.п.
  * Интерфейс проверяет ввод сам, поэтому в браузере эта ошибка означает ошибку в коде.

@@ -31,8 +31,10 @@ export type CuttingCost = {
   piercePerPartKopecks: Kopecks | null
 }
 
-// TODO(Q-2): максимальная толщина — 16 мм, как в прайсе: список целиком берётся из tariffs.json.
-/** Толщины, доступные для резки, по возрастанию — для выпадающего списка. */
+/**
+ * Толщины, доступные для резки, по возрастанию — для выпадающего списка.
+ * Максимум задан тарифами: сейчас 10 мм (Q-2), строки 12–16 мм не используются.
+ */
 export const cuttingThicknesses = (material: Material): number[] => material.cutting.rows.map((r) => r.thickness)
 
 export const findCuttingRow = (material: Material, thicknessMm: number): CuttingRow | undefined =>
