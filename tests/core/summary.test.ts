@@ -99,7 +99,7 @@ describe('текст «Скопировать расчёт»', () => {
   })
 
   it('неполный итог и замечания к чертежу', () => {
-    const q = quote({ bending: { bendsPerPart: 2, bendLengthMm: 300 } })
+    const q = quote({ thicknessMm: 8, bending: { bendsPerPart: 2, bendLengthMm: 2000 } })
     const text = plain(
       quoteText({
         quote: q,
@@ -109,7 +109,7 @@ describe('текст «Скопировать расчёт»', () => {
       }),
     )
     expect(text).toContain('Гибка: 2 гиба — по запросу\n  Для этой толщины и длины гиба цены в прайсе нет — по запросу')
-    expect(text).toContain(`Итого за 10 шт.: 1 040,00 ₽\n${INCOMPLETE_NOTE}`)
+    expect(text).toContain(`Итого за 10 шт.: 1 745,40 ₽\n${INCOMPLETE_NOTE}`)
     expect(text).toContain(
       'Замечания к чертежу:\n— В чертеже есть незамкнутые контуры — проверьте файл\n— Удалены совпадающие дубли элементов: 2',
     )

@@ -16,7 +16,7 @@ export type BendingInput = {
 export type BendingOnRequestReason =
   /** Толщина больше, чем в таблице гибки (сейчас больше 8 мм). */
   | 'THICKNESS_OUT_OF_RANGE'
-  /** Длина гиба больше, чем в таблице (сейчас больше 2500 мм). */
+  /** Длина гиба больше, чем в таблице (сейчас больше 3200 мм). */
   | 'LENGTH_OUT_OF_RANGE'
   /** Тираж больше последнего диапазона (если у него задан max). */
   | 'QUANTITY_OUT_OF_RANGE'
@@ -46,7 +46,6 @@ export const findThicknessBand = (tariffs: BendingTariffs, thicknessMm: number):
   tariffs.thicknessBands.find((b) => thicknessMm <= b.maxThickness) ?? null
 
 // TODO(Q-6): граница включается в нижний диапазон: 500 мм — «до 500».
-// TODO(Q-3): первый диапазон «до 500 мм» восстановлен по обрезанному скриншоту (assumed в tariffs.json).
 /** Диапазон длины гиба: первый, где Lb <= maxLength (ТЗ 5). */
 export const findLengthRange = (tariffs: BendingTariffs, bendLengthMm: number): LengthRange | null =>
   tariffs.lengthRanges.find((r) => bendLengthMm <= r.maxLength) ?? null

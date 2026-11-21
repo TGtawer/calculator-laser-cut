@@ -43,9 +43,10 @@ describe('data/tariffs.json', () => {
     expect(t.bending.quantityBrackets.map((b) => b.id)).toEqual(['q1', 'q2', 'q3', 'q4', 'q5'])
     expect(t.bending.quantityBrackets.at(-1)!.max).toBeNull()
     expect(t.bending.thicknessBands.map((b) => b.id)).toEqual(['t1', 't2', 't3', 't4', 't5'])
-    expect(t.bending.lengthRanges.map((r) => r.id)).toEqual(['L1', 'L2', 'L3'])
+    expect(t.bending.lengthRanges.map((r) => r.id)).toEqual(['L1', 'L2', 'L3', 'L4'])
 
-    expect(lengthRange(t, 'L1').prices['t3']).toBeNull()
+    expect(lengthRange(t, 'L1').prices['t3']).toEqual([52, 45, 40, 36, 35])
+    expect(lengthRange(t, 'L4').prices['t3']).toBeNull()
     expect(lengthRange(t, 'L2').prices['t3']).toEqual([55, 50, 46, 40, 37])
   })
 })

@@ -86,22 +86,22 @@ describe('контрольные примеры ТЗ 5.1', () => {
     expect(q.complete).toBe(true)
   })
 
-  it('пример 4: t = 3, Lb = 300 — L1 × t3 = null, «по запросу», итог неполный', () => {
-    const b = bend({ thicknessMm: 3, bendLengthMm: 300, bendsPerPart: 2, quantity: 10 })
-    expect(b.range?.id).toBe('L1')
-    expect(b.band?.id).toBe('t3')
+  it('пример 4: t = 8, Lb = 2000 — L3 × t5 = null, «по запросу», итог неполный', () => {
+    const b = bend({ thicknessMm: 8, bendLengthMm: 2000, bendsPerPart: 2, quantity: 10 })
+    expect(b.range?.id).toBe('L3')
+    expect(b.band?.id).toBe('t5')
     expect(b.pricePerBendKopecks).toBeNull()
     expect(b.perPartKopecks).toBeNull()
     expect(b.onRequest).toBe('NO_PRICE')
 
-    // Резка посчитана, гибка — нет: в итог вошла только резка.
+    // Резка посчитана по тарифу 8 мм (233 ₽/м, 30 ₽/прожиг), гибка — нет: в итог вошла только резка.
     const q = calculateQuote(
       tariffs,
-      quoteInput({ quantity: 10, cutLengthMm: 1000, pierces: 1, bending: { bendsPerPart: 2, bendLengthMm: 300 } }),
+      quoteInput({ thicknessMm: 8, quantity: 10, cutLengthMm: 1000, pierces: 1, bending: { bendsPerPart: 2, bendLengthMm: 2000 } }),
     )
     expect(q.complete).toBe(false)
-    expect(q.pricePerPartKopecks).toBe(11300 + 2100)
-    expect(q.totalKopecks).toBe((11300 + 2100) * 10)
+    expect(q.pricePerPartKopecks).toBe(23300 + 3000)
+    expect(q.totalKopecks).toBe((23300 + 3000) * 10)
   })
 
   it('пример 5: границы диапазонов', () => {
@@ -185,16 +185,44 @@ describe('гибка', () => {
     expect(bend({ thicknessMm: 8 }).band?.id).toBe('t5')
   })
 
-  it('длина гиба больше 2500 мм — «по запросу»', () => {
+  it('диапазон «до 500 мм»: t = 3, Lb = 300, B = 2, N = 10 — 52 ₽/гиб, 104,00 ₽ за деталь', () => {
+    const b = bend({ thicknessMm: 3, bendLengthMm: 300, bendsPerPart: 2, quantity: 10 })
+    expect(b.range?.id).toBe('L1')
+    expect(b.band?.id).toBe('t3')
+    expect(b.totalBends).toBe(20)
+    expect(b.bracket?.id).toBe('q1')
+    expect(b.pricePerBendKopecks).toBe(5200)
+    expect(b.perPartKopecks).toBe(10400)
+    expect(b.onRequest).toBeNull()
+  })
+
+  it('длина гиба больше 3200 мм — «по запросу»', () => {
     expect(bend({ bendLengthMm: 2500 }).range?.id).toBe('L3')
-    const b = bend({ bendLengthMm: 2501 })
+    expect(bend({ bendLengthMm: 2501 }).range?.id).toBe('L4')
+    expect(bend({ bendLengthMm: 3200 }).range?.id).toBe('L4')
+    const b = bend({ bendLengthMm: 3201 })
     expect(b.range).toBeNull()
     expect(b.onRequest).toBe('LENGTH_OUT_OF_RANGE')
   })
 
+  it('диапазон «от 2500 до 3200 мм»: t = 1 — 65 ₽, t = 3 — «по запросу»', () => {
+    const thin = bend({ thicknessMm: 1, bendLengthMm: 3000, bendsPerPart: 1, quantity: 1 })
+    expect(thin.range?.id).toBe('L4')
+    expect(thin.band?.id).toBe('t1')
+    expect(thin.pricePerBendKopecks).toBe(6500)
+    expect(thin.perPartKopecks).toBe(6500)
+    expect(thin.onRequest).toBeNull()
+
+    const thick = bend({ thicknessMm: 3, bendLengthMm: 3000, bendsPerPart: 1, quantity: 1 })
+    expect(thick.range?.id).toBe('L4')
+    expect(thick.band?.id).toBe('t3')
+    expect(thick.pricePerBendKopecks).toBeNull()
+    expect(thick.onRequest).toBe('NO_PRICE')
+  })
+
   it('строки нет в прайсе (null вместо строки) — «по запросу»', () => {
-    const b = bend({ thicknessMm: 6, bendLengthMm: 2000 })
-    expect(b.range?.id).toBe('L3')
+    const b = bend({ thicknessMm: 6, bendLengthMm: 3000 })
+    expect(b.range?.id).toBe('L4')
     expect(b.band?.id).toBe('t4')
     expect(b.onRequest).toBe('NO_PRICE')
   })
@@ -227,7 +255,7 @@ describe('гибка', () => {
 
   it('пояснения «по запросу» — с границами из тарифов', () => {
     expect(bendingOnRequestMessage('THICKNESS_OUT_OF_RANGE', tariffs.bending)).toBe('Гибка листа толще 8 мм — по запросу')
-    expect(bendingOnRequestMessage('LENGTH_OUT_OF_RANGE', tariffs.bending)).toBe('Гиб длиннее 2 500 мм — по запросу')
+    expect(bendingOnRequestMessage('LENGTH_OUT_OF_RANGE', tariffs.bending)).toBe('Гиб длиннее 3 200 мм — по запросу')
     expect(bendingOnRequestMessage('NO_PRICE', tariffs.bending)).toContain('по запросу')
   })
 })
