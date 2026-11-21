@@ -354,6 +354,9 @@ ul.alert {
 /* ---------- Превью ---------- */
 
 .preview__canvas {
+  /* Толщина линий: обычные контуры и незамкнутые (предупреждение, поэтому толще). */
+  --stroke: 1px;
+  --stroke-open: 1.75px;
   display: grid;
   place-items: center;
   height: clamp(200px, 55vw, 400px);
@@ -367,6 +370,14 @@ ul.alert {
     linear-gradient(to right, #eef0f2 1px, transparent 1px),
     linear-gradient(to bottom, #eef0f2 1px, transparent 1px);
   background-size: 20px 20px;
+}
+
+/* На телефоне превью маленькое — линии тоньше, чтобы мелкие отверстия не слипались. */
+@media (max-width: 599px) {
+  .preview__canvas {
+    --stroke: 0.75px;
+    --stroke-open: 1.25px;
+  }
 }
 
 .preview__canvas svg {
@@ -384,7 +395,7 @@ ul.alert {
 
 .shape {
   fill: none;
-  stroke-width: 1.5px;
+  stroke-width: var(--stroke);
   stroke-linejoin: round;
   stroke-linecap: round;
   vector-effect: non-scaling-stroke;
@@ -405,7 +416,7 @@ ul.alert {
 
 .shape--open {
   stroke: var(--color-open);
-  stroke-width: 2.5px;
+  stroke-width: var(--stroke-open);
 }
 
 .legend {
