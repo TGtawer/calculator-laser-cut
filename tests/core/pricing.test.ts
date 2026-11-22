@@ -12,6 +12,7 @@ import {
 } from '../../src/core/pricing/bending.ts'
 import { PricingInputError, roundUpToRuble, rubToKopecks } from '../../src/core/pricing/common.ts'
 import { cuttingCost, cuttingThicknesses } from '../../src/core/pricing/cutting.ts'
+import { metalCost } from '../../src/core/pricing/metal.ts'
 import { type QuoteInput, calculateQuote } from '../../src/core/pricing/quote.ts'
 import { type Tariffs, parseTariffs } from '../../src/core/pricing/tariffs.ts'
 
@@ -33,6 +34,10 @@ const quoteInput = (over: Partial<QuoteInput>): QuoteInput => ({
   quantity: 1,
   cutLengthMm: 0,
   pierces: 0,
+  bbox: { width: 100, height: 50 },
+  // По умолчанию — металл заказчика, чтобы примеры 1–5 и тесты резки/гибки проверяли услуги изолированно.
+  customerMetal: true,
+  metalPriceRubPerKg: null,
   bending: null,
   ...over,
 })
@@ -129,6 +134,187 @@ describe('контрольные примеры ТЗ 5.1', () => {
     expect(bend({ bendsPerPart: 5, quantity: 10 }).bracket?.id).toBe('q1')
     expect(bend({ bendsPerPart: 3, quantity: 17 }).bracket?.id).toBe('q2')
     expect(bend({ bendsPerPart: 1, quantity: 1001 }).bracket?.id).toBe('q5')
+  })
+
+  it('пример 6 (Q-11): фикстура 01 (100×50), 3 мм, 10 шт, marginMm = 0, металл 120 ₽/кг — итого 1 182 ₽', () => {
+    const a = analyzeFixture('01_plate_rect_2holes.dxf')
+    const t = copy()
+    t.order.marginMm = 0
+    t.materials[0]!.cutting.rows.find((r) => r.thickness === 3)!.metal = 120
+
+    const q = calculateQuote(
+      t,
+      quoteInput({
+        thicknessMm: 3,
+        quantity: 10,
+        cutLengthMm: a.cutLengthMm,
+        pierces: a.pierces,
+        bbox: a.bbox,
+        customerMetal: false,
+      }),
+    )
+    expect(q.metal).not.toBeNull()
+    expect(q.metal!.areaM2).toBeCloseTo(0.005, 8)
+    expect(q.metal!.massKg).toBeCloseTo(0.11775, 8)
+    expect(q.metal!.rateKopecks).toBe(12000)
+    expect(q.metal!.perPartKopecks).toBe(1413) // 0.11775 × 120 = 14,13 ₽
+    expect(q.pricePerPartKopecks).toBe(10400 + 1413) // 118,13 ₽
+    expect(q.totalKopecks).toBe(118130) // 1 181,30 ₽
+    expect(q.totalRoundedKopecks).toBe(118200) // 1 182 ₽ (округление вверх)
+    expect(q.belowMinimum).toBe(true) // 1 182 ₽ < 5 000 ₽
+    expect(q.complete).toBe(true)
+  })
+
+  it('пример 7 (Q-11): то же, marginMm = 5 — площадь 110×60 мм, металл 18,65 ₽ за деталь', () => {
+    const a = analyzeFixture('01_plate_rect_2holes.dxf')
+    const t = copy()
+    t.order.marginMm = 5
+    t.materials[0]!.cutting.rows.find((r) => r.thickness === 3)!.metal = 120
+
+    const q = calculateQuote(
+      t,
+      quoteInput({
+        thicknessMm: 3,
+        quantity: 10,
+        cutLengthMm: a.cutLengthMm,
+        pierces: a.pierces,
+        bbox: a.bbox,
+        customerMetal: false,
+      }),
+    )
+    expect(q.metal!.sheetWidthMm).toBeCloseTo(110, 6)
+    expect(q.metal!.sheetHeightMm).toBeCloseTo(60, 6)
+    expect(q.metal!.areaM2).toBeCloseTo(0.0066, 8)
+    expect(q.metal!.massKg).toBeCloseTo(0.15543, 8)
+    expect(q.metal!.perPartKopecks).toBe(1865) // 0.15543 × 120 = 18,6516 → 18,65 ₽
+    expect(q.pricePerPartKopecks).toBe(10400 + 1865)
+    expect(q.totalKopecks).toBe(122650)
+    expect(q.totalRoundedKopecks).toBe(122700)
+    expect(q.belowMinimum).toBe(true)
+    expect(q.complete).toBe(true)
+  })
+
+  it('пример 8 (Q-11): metal = null и цена не введена — «по запросу», итог неполный, минимум не проверяется', () => {
+    const a = analyzeFixture('01_plate_rect_2holes.dxf')
+    const q = calculateQuote(
+      tariffs,
+      quoteInput({
+        thicknessMm: 3,
+        quantity: 10,
+        cutLengthMm: a.cutLengthMm,
+        pierces: a.pierces,
+        bbox: a.bbox,
+        customerMetal: false,
+        metalPriceRubPerKg: null,
+      }),
+    )
+    expect(q.metal).not.toBeNull()
+    expect(q.metal!.rateKopecks).toBeNull()
+    expect(q.metal!.perPartKopecks).toBeNull()
+    expect(q.pricePerPartKopecks).toBe(10400)
+    expect(q.totalRoundedKopecks).toBe(104000)
+    expect(q.complete).toBe(false)
+    expect(q.belowMinimum).toBe(false)
+  })
+
+  it('пример 9 (Q-11): «Металл заказчика» — итог совпадает с примером 1 (1 040 ₽)', () => {
+    const a = analyzeFixture('01_plate_rect_2holes.dxf')
+    const t = copy()
+    t.materials[0]!.cutting.rows.find((r) => r.thickness === 3)!.metal = 120
+
+    const q = calculateQuote(
+      t,
+      quoteInput({
+        thicknessMm: 3,
+        quantity: 10,
+        cutLengthMm: a.cutLengthMm,
+        pierces: a.pierces,
+        bbox: a.bbox,
+        customerMetal: true,
+        metalPriceRubPerKg: 120,
+      }),
+    )
+    expect(q.metal).toBeNull()
+    expect(q.customerMetal).toBe(true)
+    expect(q.pricePerPartKopecks).toBe(10400)
+    expect(q.totalRoundedKopecks).toBe(104000)
+    expect(q.belowMinimum).toBe(true)
+    expect(q.complete).toBe(true)
+  })
+})
+
+describe('металл (Q-11)', () => {
+  it('ручной ввод цены за кг работает при metal = null в тарифах', () => {
+    const a = analyzeFixture('01_plate_rect_2holes.dxf')
+    const q = calculateQuote(
+      tariffs,
+      quoteInput({
+        thicknessMm: 3,
+        quantity: 10,
+        cutLengthMm: a.cutLengthMm,
+        pierces: a.pierces,
+        bbox: a.bbox,
+        customerMetal: false,
+        metalPriceRubPerKg: 120,
+      }),
+    )
+    expect(q.metal!.rateKopecks).toBe(12000)
+    expect(q.metal!.perPartKopecks).toBe(1865)
+    expect(q.complete).toBe(true)
+  })
+
+  it('ручной ввод цены переопределяет цену из тарифов', () => {
+    const t = copy()
+    t.order.marginMm = 0
+    t.materials[0]!.cutting.rows.find((r) => r.thickness === 3)!.metal = 100
+
+    const m = metalCost(t.materials[0]!, t.order, {
+      thicknessMm: 3,
+      bbox: { width: 100, height: 50 },
+      rateRubPerKg: 120,
+    })
+    expect(m.rateKopecks).toBe(12000)
+    expect(m.perPartKopecks).toBe(1413)
+  })
+
+  it('includeMaterialCost = false отключает расчёт металла и флаг customerMetal', () => {
+    const t = copy()
+    t.order.includeMaterialCost = false
+    const q = calculateQuote(
+      t,
+      quoteInput({
+        thicknessMm: 3,
+        quantity: 10,
+        cutLengthMm: 1000,
+        pierces: 1,
+        customerMetal: false,
+        metalPriceRubPerKg: 120,
+      }),
+    )
+    expect(q.metal).toBeNull()
+    expect(q.customerMetal).toBe(false)
+    expect(q.complete).toBe(true)
+  })
+
+  it('проверка минимума заказа (Q-8) учитывает стоимость металла', () => {
+    // Без металла: 40 × 104 ₽ = 4 160 ₽ < 5 000 ₽; с металлом (18,65 ₽ × 40 = 746 ₽) → 4 906 ₽ < 5 000 ₽;
+    // а при цене металла 200 ₽/кг (31,09 ₽ × 40 = 1 243,60 ₽) → 5 404 ₽ ≥ 5 000 ₽.
+    const a = analyzeFixture('01_plate_rect_2holes.dxf')
+    const q = calculateQuote(
+      tariffs,
+      quoteInput({
+        thicknessMm: 3,
+        quantity: 40,
+        cutLengthMm: a.cutLengthMm,
+        pierces: a.pierces,
+        bbox: a.bbox,
+        customerMetal: false,
+        metalPriceRubPerKg: 200,
+      }),
+    )
+    expect(q.metal!.perPartKopecks).toBe(3109) // 0.15543 × 200 = 31,086 → 31,09 ₽
+    expect(q.totalRoundedKopecks).toBe(540400) // (104,00 + 31,09) × 40 = 5 403,60 → 5 404 ₽
+    expect(q.belowMinimum).toBe(false)
   })
 })
 
@@ -339,5 +525,20 @@ describe('проверка входных данных', () => {
 
   it('неизвестный материал', () => {
     expectInputError(() => calculateQuote(tariffs, quoteInput({ materialId: 'alu' })), 'Материала «alu» нет')
+  })
+
+  it('габарит детали ≥ 0, ручная цена металла ≥ 0', () => {
+    expectInputError(
+      () => calculateQuote(tariffs, quoteInput({ customerMetal: false, bbox: { width: -10, height: 50 } })),
+      'Ширина габарита',
+    )
+    expectInputError(
+      () => calculateQuote(tariffs, quoteInput({ customerMetal: false, bbox: { width: 100, height: -5 } })),
+      'Высота габарита',
+    )
+    expectInputError(
+      () => calculateQuote(tariffs, quoteInput({ customerMetal: false, metalPriceRubPerKg: -1 })),
+      'Цена металла',
+    )
   })
 })

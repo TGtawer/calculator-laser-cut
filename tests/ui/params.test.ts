@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import tariffsJson from '../../data/tariffs.json'
 import { parseTariffs } from '../../src/core/pricing/tariffs.ts'
-import { type FormValues, checkForm, initialForm, parseCount, parsePositive } from '../../src/ui/params.ts'
+import { type FormValues, checkForm, initialForm, parseCount, parsePositive, parsePrice } from '../../src/ui/params.ts'
 
 const tariffs = parseTariffs(tariffsJson)
 const form = (over: Partial<FormValues>): FormValues => ({ ...initialForm(tariffs), thickness: '3', ...over })
@@ -19,6 +19,14 @@ describe('поля ввода', () => {
     expect(parsePositive('0.5')).toBe(0.5)
     for (const raw of ['', '0', '-5', 'abc', '1e3', '5,']) expect(parsePositive(raw)).toBeNull()
   })
+
+  it('цена металла — число > 0 с точностью до копеек', () => {
+    expect(parsePrice('120')).toBe(120)
+    expect(parsePrice('120,5')).toBe(120.5)
+    expect(parsePrice('120.55')).toBe(120.55)
+    expect(parsePrice(' 95,00 ')).toBe(95)
+    for (const raw of ['', '0', '-10', '120,123', 'abc', '1e2', '10,']) expect(parsePrice(raw)).toBeNull()
+  })
 })
 
 describe('проверка формы', () => {
@@ -29,13 +37,45 @@ describe('проверка формы', () => {
     expect(check.errors).toEqual({})
   })
 
-  it('заполненная форма без гибки', () => {
+  it('заполненная форма без гибки и с пустой ценой металла (по запросу)', () => {
     expect(checkForm(form({ quantity: '10' }), tariffs).input).toEqual({
       materialId: 'steel_carbon',
       thicknessMm: 3,
       quantity: 10,
+      customerMetal: false,
+      metalPriceRubPerKg: null,
       bending: null,
     })
+  })
+
+  it('цена металла: валидная попадает в расчёт, невалидная даёт ошибку', () => {
+    const ok = checkForm(form({ metalPrice: '120,5' }), tariffs)
+    expect(ok.errors).toEqual({})
+    expect(ok.input?.metalPriceRubPerKg).toBe(120.5)
+
+    const bad = checkForm(form({ metalPrice: '-5' }), tariffs)
+    expect(bad.input).toBeNull()
+    expect(bad.errors.metalPrice).toBeDefined()
+
+    const tooPrecise = checkForm(form({ metalPrice: '120,125' }), tariffs)
+    expect(tooPrecise.input).toBeNull()
+    expect(tooPrecise.errors.metalPrice).toBeDefined()
+  })
+
+  it('металл заказчика: поле цены металла не проверяется', () => {
+    const check = checkForm(form({ customerMetal: true, metalPrice: 'abc' }), tariffs)
+    expect(check.errors).toEqual({})
+    expect(check.input?.customerMetal).toBe(true)
+    expect(check.input?.metalPriceRubPerKg).toBeNull()
+  })
+
+  it('если учёт металла выключен в тарифах, поля металла игнорируются', () => {
+    const t = structuredClone(tariffs)
+    t.order.includeMaterialCost = false
+    const check = checkForm(form({ customerMetal: true, metalPrice: 'abc' }), t)
+    expect(check.errors).toEqual({})
+    expect(check.input?.customerMetal).toBe(false)
+    expect(check.input?.metalPriceRubPerKg).toBeNull()
   })
 
   it('толщины нет в тарифах — ошибка поля', () => {

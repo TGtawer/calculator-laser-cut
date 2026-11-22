@@ -79,6 +79,7 @@ export default function App() {
       ...formCheck.input,
       cutLengthMm: analysis.cutLengthMm,
       pierces: analysis.pierces,
+      bbox: analysis.bbox,
     })
     return {
       quote,

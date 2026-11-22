@@ -32,13 +32,18 @@ describe('data/tariffs.json', () => {
     expect(() => parseTariffs(tariffsJson)).not.toThrow()
   })
 
-  it('читается без потерь: строки резки, диапазоны гибки и null «по запросу»', () => {
+  it('читается без потерь: строки резки, металл, диапазоны гибки и null «по запросу»', () => {
     const t = parseTariffs(tariffsJson)
-    const rows = t.materials[0]!.cutting.rows
+    const material = t.materials[0]!
+    const rows = material.cutting.rows
 
+    expect(material.densityKgM3).toBe(7850)
+    expect(material.cutting.metalUnit).toBe('RUB_per_kg')
     expect(rows).toHaveLength(13)
-    expect(rows[0]).toEqual({ thickness: 0.5, cut: 83, pierce: 18 })
-    expect(rows.at(-1)).toEqual({ thickness: 10, cut: 300, pierce: 33 })
+    expect(rows[0]).toEqual({ thickness: 0.5, cut: 83, pierce: 18, metal: null })
+    expect(rows.at(-1)).toEqual({ thickness: 10, cut: 300, pierce: 33, metal: null })
+    expect(t.order.includeMaterialCost).toBe(true)
+    expect(t.order.marginMm).toBe(5)
     expect(t.order.minOrderRub).toBe(5000)
 
     expect(t.bending.quantityBrackets.map((b) => b.id)).toEqual(['q1', 'q2', 'q3', 'q4', 'q5'])
@@ -166,5 +171,43 @@ describe('parseTariffs: ошибки в тарифах', () => {
     const t = tariffsCopy()
     lengthRange(t, 'L3').prices['t4'] = [65, null, null, null, null]
     expect(() => parseTariffs(t)).not.toThrow()
+  })
+
+  it('отклоняет отрицательную цену металла и цену точнее копейки', () => {
+    const negative = tariffsCopy()
+    negative.materials[0]!.cutting.rows[0]!.metal = -10
+    expectInvalid(negative, 'materials[0].cutting.rows[0].metal')
+
+    const tooPrecise = tariffsCopy()
+    tooPrecise.materials[0]!.cutting.rows[0]!.metal = 120.125
+    expectInvalid(tooPrecise, 'с точностью до копейки')
+  })
+
+  it('принимает цену металла в рублях с копейками', () => {
+    const t = tariffsCopy()
+    t.materials[0]!.cutting.rows[0]!.metal = 120.55
+    expect(() => parseTariffs(t)).not.toThrow()
+  })
+
+  it('отклоняет отсутствие или неположительную плотность материала', () => {
+    const missing = tariffsCopy()
+    delete (missing.materials[0] as Record<string, unknown>)['densityKgM3']
+    expectInvalid(missing, 'densityKgM3')
+
+    const zero = tariffsCopy()
+    zero.materials[0]!.densityKgM3 = 0
+    expectInvalid(zero, 'densityKgM3')
+  })
+
+  it('отклоняет отрицательный технологический отступ marginMm', () => {
+    const t = tariffsCopy()
+    t.order.marginMm = -1
+    expectInvalid(t, 'order.marginMm')
+  })
+
+  it('отклоняет удалённое поле wasteFactor в order', () => {
+    const t = tariffsCopy()
+    ;(t.order as Record<string, unknown>)['wasteFactor'] = 1.1
+    expectInvalid(t, 'wasteFactor')
   })
 })

@@ -8,16 +8,21 @@ import { DISCLAIMER, INCOMPLETE_NOTE, minimumOrderMessage, quoteLines, quoteText
 import { parseTariffs } from '../../src/core/pricing/tariffs.ts'
 
 const tariffs = parseTariffs(tariffsJson)
+const tariffsNoMetal = structuredClone(tariffs)
+tariffsNoMetal.order.includeMaterialCost = false
 /** Intl ставит неразрывные пробелы; в тестах сравниваем с обычными. */
 const plain = (s: string): string => s.replace(/[  ]/g, ' ')
 
-const quote = (over: Partial<QuoteInput>) =>
-  calculateQuote(tariffs, {
-    materialId: tariffs.materials[0]!.id,
+const quote = (over: Partial<QuoteInput>, customTariffs = tariffsNoMetal) =>
+  calculateQuote(customTariffs, {
+    materialId: customTariffs.materials[0]!.id,
     thicknessMm: 3,
     quantity: 10,
     cutLengthMm: 362.832,
     pierces: 3,
+    bbox: { width: 100, height: 50 },
+    customerMetal: false,
+    metalPriceRubPerKg: null,
     bending: null,
     ...over,
   })
@@ -148,5 +153,84 @@ describe('текст «Скопировать расчёт»', () => {
     )
     expect(text).toContain('Итого за 50 шт.: 7 750 ₽')
     expect(text).not.toContain('ниже минимальной')
+  })
+})
+
+describe('металл в разбивке и тексте (Q-11)', () => {
+  it('строка «Металл» с отступом и введённой ценой', () => {
+    const q = quote({ metalPriceRubPerKg: 120 }, tariffs)
+    const lines = quoteLines(q, tariffs.bending).map((l) => ({ ...l, detail: plain(l.detail), amount: plain(l.amount) }))
+    expect(lines.at(-1)).toEqual({
+      label: 'Металл',
+      detail: '0,16 кг × 120,00 ₽/кг',
+      amount: '18,65 ₽',
+      onRequest: false,
+      note: 'Габарит с отступом 110 × 60 мм, лист 3 мм',
+    })
+
+    const text = plain(
+      quoteText({
+        quote: q,
+        bendingTariffs: tariffs.bending,
+        fileName: 'plate.dxf',
+        analysis: { bbox: { minX: 0, minY: 0, width: 100, height: 50 }, warnings: [], duplicatesRemoved: 0 },
+      }),
+    )
+    expect(text).toContain('Металл: 0,16 кг × 120,00 ₽/кг = 18,65 ₽\n  Габарит с отступом 110 × 60 мм, лист 3 мм')
+    expect(text).toContain('За деталь: 122,65 ₽\nИтого за 10 шт.: 1 227 ₽')
+  })
+
+  it('строка «Металл» без отступа (marginMm = 0)', () => {
+    const t = structuredClone(tariffs)
+    t.order.marginMm = 0
+    const q = quote({ metalPriceRubPerKg: 120 }, t)
+    const lines = quoteLines(q, t.bending).map((l) => ({ ...l, detail: plain(l.detail), amount: plain(l.amount) }))
+    expect(lines.at(-1)).toEqual({
+      label: 'Металл',
+      detail: '0,12 кг × 120,00 ₽/кг',
+      amount: '14,13 ₽',
+      onRequest: false,
+      note: 'Габарит 100 × 50 мм, лист 3 мм',
+    })
+  })
+
+  it('цена металла не задана — «по запросу» и неполный итог', () => {
+    const q = quote({ metalPriceRubPerKg: null }, tariffs)
+    const lines = quoteLines(q, tariffs.bending).map((l) => ({ ...l, detail: plain(l.detail), amount: plain(l.amount) }))
+    expect(lines.at(-1)).toEqual({
+      label: 'Металл',
+      detail: '0,16 кг',
+      amount: 'по запросу',
+      onRequest: true,
+      note: 'Цена металла для листа 3 мм — по запросу (габарит с отступом 110 × 60 мм)',
+    })
+
+    const text = plain(
+      quoteText({
+        quote: q,
+        bendingTariffs: tariffs.bending,
+        fileName: 'plate.dxf',
+        analysis: { bbox: { minX: 0, minY: 0, width: 100, height: 50 }, warnings: [], duplicatesRemoved: 0 },
+      }),
+    )
+    expect(text).toContain('Металл: 0,16 кг — по запросу')
+    expect(text).toContain(INCOMPLETE_NOTE)
+    expect(text).not.toContain('ниже минимальной')
+  })
+
+  it('металл заказчика: строки «Металл» нет в таблице, в тексте «Металл: заказчика»', () => {
+    const q = quote({ customerMetal: true, metalPriceRubPerKg: 120 }, tariffs)
+    const lines = quoteLines(q, tariffs.bending)
+    expect(lines.map((l) => l.label)).toEqual(['Резка', 'Прожиги'])
+
+    const text = plain(
+      quoteText({
+        quote: q,
+        bendingTariffs: tariffs.bending,
+        fileName: 'plate.dxf',
+        analysis: { bbox: { minX: 0, minY: 0, width: 100, height: 50 }, warnings: [], duplicatesRemoved: 0 },
+      }),
+    )
+    expect(text).toContain('Прожиги: 3 × 21,00 ₽ = 63,00 ₽\nМеталл: заказчика\nЗа деталь: 104,00 ₽')
   })
 })
