@@ -69,15 +69,20 @@ const cuttingRowSchema = z.strictObject({
   cut: priceSchema,
   /** Прожиг, ₽ за 1 шт. */
   pierce: priceSchema,
+  /** Металл, ₽ за 1 кг; null — по запросу (или вводится вручную). */
+  metal: priceSchema,
 })
 
 const materialSchema = z.strictObject({
   id: idSchema,
   name: labelSchema,
   grades: z.array(z.string().min(1)),
+  /** Плотность материала, кг/м³ (например, 7850 для углеродистой стали). */
+  densityKgM3: z.number().positive(),
   cutting: z.strictObject({
     cutUnit: z.literal('RUB_per_m'),
     pierceUnit: z.literal('RUB_per_piece'),
+    metalUnit: z.literal('RUB_per_kg'),
     rows: z
       .array(cuttingRowSchema)
       .min(1)
@@ -187,8 +192,10 @@ const bendingSchema = z
 // ---------- Заказ ----------
 
 const orderSchema = z.strictObject({
-  /** Учитывать ли стоимость металла (Q-7: не учитывается). */
+  /** Учитывать ли стоимость металла по умолчанию (Q-11, отменяет Q-7). */
   includeMaterialCost: z.boolean(),
+  /** Технологический отступ по краям габарита детали при расчёте расхода металла, мм с каждой стороны. */
+  marginMm: z.number().nonnegative(),
   /** Минимальная сумма заказа в рублях; null — не задана (Q-8: сейчас 5 000 ₽). */
   minOrderRub: rubSchema.nullable(),
   notes: z.string().optional(),
@@ -214,6 +221,7 @@ export type Tariffs = z.infer<typeof tariffsSchema>
 export type Material = Tariffs['materials'][number]
 export type CuttingRow = Material['cutting']['rows'][number]
 export type BendingTariffs = Tariffs['bending']
+export type OrderTariffs = Tariffs['order']
 export type QuantityBracket = BendingTariffs['quantityBrackets'][number]
 export type ThicknessBand = BendingTariffs['thicknessBands'][number]
 export type LengthRange = BendingTariffs['lengthRanges'][number]

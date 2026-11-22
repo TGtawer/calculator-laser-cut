@@ -36,6 +36,7 @@ export type QuoteLine = {
 }
 
 const mm = (n: number): string => `${formatDecimal(n, 1)} мм`
+const kg = (n: number): string => `${formatDecimal(n, 2)} кг`
 
 /** Толщина листа: «3 мм», «0,5 мм». */
 export const thicknessText = (t: number): string => `${formatDecimal(t, 2)} мм`
@@ -48,7 +49,7 @@ function line(label: string, base: string, rate: string | null, kopecks: Kopecks
 
 /** Статьи расчёта на одну деталь. */
 export function quoteLines(quote: Quote, bendingTariffs: BendingTariffs): QuoteLine[] {
-  const { cutting, bending } = quote
+  const { cutting, bending, metal } = quote
   const thickness = thicknessText(cutting.thicknessMm)
   const lines = [
     line(
@@ -83,6 +84,21 @@ export function quoteLines(quote: Quote, bendingTariffs: BendingTariffs): QuoteL
     }
     lines.push(item)
   }
+  if (metal) {
+    const dims = `${formatDecimal(metal.sheetWidthMm, 1)} × ${mm(metal.sheetHeightMm)}`
+    const sheet = metal.marginMm > 0 ? `Габарит с отступом ${dims}` : `Габарит ${dims}`
+    const item = line(
+      'Металл',
+      kg(metal.massKg),
+      metal.rateKopecks === null ? null : `${formatRub(metal.rateKopecks)}/кг`,
+      metal.perPartKopecks,
+      `Цена металла для листа ${thickness} — по запросу (${sheet.toLowerCase()})`,
+    )
+    if (!item.onRequest) {
+      item.note = `${sheet}, лист ${thickness}`
+    }
+    lines.push(item)
+  }
   return lines
 }
 
@@ -109,6 +125,7 @@ export function quoteText({ quote, bendingTariffs, fileName, analysis }: QuoteTe
     out.push(item.onRequest ? `${item.label}: ${item.detail} — ${ON_REQUEST}` : `${item.label}: ${item.detail} = ${item.amount}`)
     if (item.note) out.push(`  ${item.note}`)
   }
+  if (quote.customerMetal) out.push('Металл: заказчика')
   out.push(`За деталь: ${formatRub(quote.pricePerPartKopecks)}`)
   out.push(`Итого за ${quantity} шт.: ${formatRubWhole(quote.totalRoundedKopecks)}`)
   if (quote.belowMinimum && quote.minimumOrderKopecks !== null) {

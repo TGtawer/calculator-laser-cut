@@ -510,6 +510,43 @@ ul.alert {
   gap: 12px;
 }
 
+.metal-section {
+  display: grid;
+  gap: 12px;
+}
+
+.segmented {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  padding: 3px;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: var(--color-bg);
+}
+
+.segmented__btn {
+  min-height: 36px;
+  padding: 6px 10px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--color-muted);
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.25;
+  cursor: pointer;
+}
+
+.segmented__btn:hover:not(.segmented__btn--active) {
+  color: var(--color-text);
+}
+
+.segmented__btn--active {
+  background: var(--color-graphite);
+  color: #fff;
+}
+
 /* ---------- Расчёт ---------- */
 
 .todo {
