@@ -41,6 +41,7 @@ function Field({ label, hint, error, children }: FieldProps) {
 
 /** Параметры заказа (ТЗ 2, п. 4). Толщина — только из тарифов, свободного ввода нет. */
 export function ParamsForm({ tariffs, value, errors, onChange }: Props) {
+  const metalGroupId = useId()
   const set = <K extends keyof FormValues>(key: K, v: FormValues[K]) => onChange({ ...value, [key]: v })
   const material = tariffs.materials.find((m) => m.id === value.materialId)
   const thicknesses = material ? cuttingThicknesses(material) : []
@@ -103,15 +104,30 @@ export function ParamsForm({ tariffs, value, errors, onChange }: Props) {
       </div>
 
       {tariffs.order.includeMaterialCost && (
-        <>
-          <label className="check check--block">
-            <input
-              type="checkbox"
-              checked={value.customerMetal}
-              onChange={(e) => set('customerMetal', e.currentTarget.checked)}
-            />
-            <span>Металл заказчика</span>
-          </label>
+        <div className="metal-section">
+          <div className="field" role="group" aria-labelledby={metalGroupId}>
+            <span id={metalGroupId} className="field__label">
+              Металл
+            </span>
+            <div className="segmented">
+              <button
+                type="button"
+                className={`segmented__btn${!value.customerMetal ? ' segmented__btn--active' : ''}`}
+                aria-pressed={!value.customerMetal}
+                onClick={() => set('customerMetal', false)}
+              >
+                Наш металл
+              </button>
+              <button
+                type="button"
+                className={`segmented__btn${value.customerMetal ? ' segmented__btn--active' : ''}`}
+                aria-pressed={value.customerMetal}
+                onClick={() => set('customerMetal', true)}
+              >
+                Металл заказчика
+              </button>
+            </div>
+          </div>
 
           {!value.customerMetal && (
             <Field
@@ -136,7 +152,7 @@ export function ParamsForm({ tariffs, value, errors, onChange }: Props) {
               )}
             </Field>
           )}
-        </>
+        </div>
       )}
 
       <label className="check check--block">
