@@ -2,6 +2,8 @@ import { type Kopecks, PricingInputError, formatNumber, requireNumber, rubToKope
 import { findCuttingRow } from './cutting.ts'
 import type { Material, OrderTariffs } from './tariffs.ts'
 
+export const KG_PER_TONNE = 1000
+
 /** Габарит детали, мм (подмножество DxfAnalysis['bbox']). */
 export type PartBbox = { width: number; height: number }
 
@@ -28,8 +30,8 @@ export type MetalCost = {
   areaM2: number
   /** Масса металла на одну деталь (без округления), кг. */
   massKg: number
-  /** Цена металла, коп. за 1 кг; null — по запросу. */
-  rateKopecks: Kopecks | null
+  /** Цена металла, коп. за 1 т; null — по запросу. */
+  rateKopecksPerTonne: Kopecks | null
   /** Стоимость металла на одну деталь, коп.; null — по запросу. */
   perPartKopecks: Kopecks | null
 }
@@ -38,7 +40,7 @@ export type MetalCost = {
  * Стоимость металла на одну деталь по габариту с технологическим отступом (ТЗ 5, Q-11):
  *   areaM2       = (bbox.width + 2·marginMm) × (bbox.height + 2·marginMm) / 1e6
  *   massKg       = areaM2 × (t / 1000) × densityKgM3
- *   metalPerPart = massKg × metalRate   (округляется до копеек, половина — вверх)
+ *   metalPerPart = massKg × (metalRatePerTonne / 1000)   (округляется до копеек, половина — вверх)
  */
 export function metalCost(material: Material, order: OrderTariffs, input: MetalInput): MetalCost {
   const { thicknessMm, bbox, rateRubPerKg } = input
@@ -61,8 +63,9 @@ export function metalCost(material: Material, order: OrderTariffs, input: MetalI
   // Сначала умножение, потом деление на 1e9 — меньше погрешность плавающей точки.
   const massKg = (sheetWidthMm * sheetHeightMm * thicknessMm * material.densityKgM3) / 1e9
   const rateRub = rateRubPerKg ?? row.metal
-  const rateKopecks = rateRub === null ? null : rubToKopecks(rateRub)
-  const perPartKopecks = rateKopecks === null ? null : Math.round(massKg * rateKopecks)
+  const rateKopecksPerTonne = rateRub === null ? null : rubToKopecks(rateRub * KG_PER_TONNE)
+  const perPartKopecks =
+    rateKopecksPerTonne === null ? null : Math.round(massKg * (rateKopecksPerTonne / KG_PER_TONNE))
 
   return {
     thicknessMm,
@@ -71,7 +74,7 @@ export function metalCost(material: Material, order: OrderTariffs, input: MetalI
     marginMm: order.marginMm,
     areaM2,
     massKg,
-    rateKopecks,
+    rateKopecksPerTonne,
     perPartKopecks,
   }
 }

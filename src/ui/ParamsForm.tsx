@@ -1,6 +1,7 @@
 import { type ReactNode, useId } from 'react'
 import { formatDecimal } from '../core/format.ts'
 import { cuttingThicknesses, findCuttingRow } from '../core/pricing/cutting.ts'
+import { KG_PER_TONNE } from '../core/pricing/metal.ts'
 import { thicknessText } from '../core/pricing/summary.ts'
 import type { Tariffs } from '../core/pricing/tariffs.ts'
 import type { FieldName, FormValues } from './params.ts'
@@ -47,7 +48,7 @@ export function ParamsForm({ tariffs, value, errors, onChange }: Props) {
   const thicknesses = material ? cuttingThicknesses(material) : []
   const selectedThickness = value.thickness === '' ? null : Number(value.thickness)
   const selectedRow = material && selectedThickness !== null ? findCuttingRow(material, selectedThickness) : undefined
-  const tariffMetalPrice = selectedRow?.metal ?? null
+  const tariffMetalPrice = selectedRow?.metal == null ? null : formatDecimal(selectedRow.metal * KG_PER_TONNE, 2)
 
   return (
     <form className="params" onSubmit={(e) => e.preventDefault()} noValidate>
@@ -131,10 +132,10 @@ export function ParamsForm({ tariffs, value, errors, onChange }: Props) {
 
           {!value.customerMetal && (
             <Field
-              label="Цена металла, ₽/кг"
+              label="Цена металла, ₽/т"
               hint={
                 tariffMetalPrice !== null
-                  ? `По умолчанию из прайса (${formatDecimal(tariffMetalPrice, 2)} ₽/кг), можно указать свою`
+                  ? `По умолчанию из прайса (${tariffMetalPrice} ₽/т), можно указать свою`
                   : 'Если оставить пустым — «по запросу»'
               }
               error={errors.metalPrice}
@@ -145,7 +146,7 @@ export function ParamsForm({ tariffs, value, errors, onChange }: Props) {
                   className="input"
                   inputMode="decimal"
                   autoComplete="off"
-                  placeholder={tariffMetalPrice !== null ? formatDecimal(tariffMetalPrice, 2) : 'например, 120'}
+                  placeholder={tariffMetalPrice ?? 'например, 120 000'}
                   value={value.metalPrice}
                   onChange={(e) => set('metalPrice', e.currentTarget.value)}
                 />

@@ -1,4 +1,5 @@
 import { findCuttingRow } from '../core/pricing/cutting.ts'
+import { KG_PER_TONNE } from '../core/pricing/metal.ts'
 import type { QuoteInput } from '../core/pricing/quote.ts'
 import type { Tariffs } from '../core/pricing/tariffs.ts'
 
@@ -10,7 +11,7 @@ export type FormValues = {
   quantity: string
   /** Металл заказчика: не считать стоимость металла. */
   customerMetal: boolean
-  /** Цена металла, ₽/кг; '' — взять из тарифов (или «по запросу», если в тарифах null). */
+  /** Цена металла, ₽/т; '' — взять из тарифов (или «по запросу», если в тарифах null). */
   metalPrice: string
   bendingEnabled: boolean
   bendsPerPart: string
@@ -55,11 +56,11 @@ export function parsePositive(raw: string): number | null {
   return Number.isFinite(n) && n > 0 ? n : null
 }
 
-/** Цена в рублях > 0 с точностью до копейки, допускается десятичная запятая; null — неверно. */
+/** Цена в рублях > 0 с точностью до копейки. Допускаются пробелы между разрядами и десятичная запятая. */
 export function parsePrice(raw: string): number | null {
   const s = raw.trim().replace(',', '.')
-  if (!/^\d+(\.\d{1,2})?$/.test(s)) return null
-  const n = Number(s)
+  if (!/^(?:\d+|\d{1,3}(?:[ \u00a0\u202f]\d{3})+)(\.\d{1,2})?$/.test(s)) return null
+  const n = Number(s.replace(/[ \u00a0\u202f]/g, ''))
   return Number.isFinite(n) && n > 0 ? n : null
 }
 
@@ -83,10 +84,12 @@ export function checkForm(form: FormValues, tariffs: Tariffs): FormCheck {
   let metalPriceRubPerKg: number | null = null
   let metalPriceOk = true
   if (tariffs.order.includeMaterialCost && !customerMetal && form.metalPrice.trim() !== '') {
-    metalPriceRubPerKg = parsePrice(form.metalPrice)
-    if (metalPriceRubPerKg === null) {
-      errors.metalPrice = 'Введите цену в ₽/кг больше нуля (до копеек)'
+    const metalPriceRubPerTonne = parsePrice(form.metalPrice)
+    if (metalPriceRubPerTonne === null) {
+      errors.metalPrice = 'Введите цену за тонну больше нуля (до копеек)'
       metalPriceOk = false
+    } else {
+      metalPriceRubPerKg = metalPriceRubPerTonne / KG_PER_TONNE
     }
   }
 

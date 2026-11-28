@@ -41,10 +41,17 @@ const kg = (n: number): string => `${formatDecimal(n, 2)} кг`
 /** Толщина листа: «3 мм», «0,5 мм». */
 export const thicknessText = (t: number): string => `${formatDecimal(t, 2)} мм`
 
-function line(label: string, base: string, rate: string | null, kopecks: Kopecks | null, onRequestNote: string): QuoteLine {
+function line(
+  label: string,
+  base: string,
+  rate: string | null,
+  kopecks: Kopecks | null,
+  onRequestNote: string,
+  rateSeparator = '×',
+): QuoteLine {
   return kopecks === null || rate === null
     ? { label, detail: base, amount: ON_REQUEST, onRequest: true, note: onRequestNote }
-    : { label, detail: `${base} × ${rate}`, amount: formatRub(kopecks), onRequest: false, note: null }
+    : { label, detail: `${base} ${rateSeparator} ${rate}`, amount: formatRub(kopecks), onRequest: false, note: null }
 }
 
 /** Статьи расчёта на одну деталь. */
@@ -90,9 +97,10 @@ export function quoteLines(quote: Quote, bendingTariffs: BendingTariffs): QuoteL
     const item = line(
       'Металл',
       kg(metal.massKg),
-      metal.rateKopecks === null ? null : `${formatRub(metal.rateKopecks)}/кг`,
+      metal.rateKopecksPerTonne === null ? null : `${formatRub(metal.rateKopecksPerTonne)}/т`,
       metal.perPartKopecks,
       `Цена металла для листа ${thickness} — по запросу (${sheet.toLowerCase()})`,
+      'по',
     )
     if (!item.onRequest) {
       item.note = `${sheet}, лист ${thickness}`

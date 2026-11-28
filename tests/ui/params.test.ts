@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import tariffsJson from '../../data/tariffs.json'
+import { calculateQuote } from '../../src/core/pricing/quote.ts'
 import { parseTariffs } from '../../src/core/pricing/tariffs.ts'
 import { type FormValues, checkForm, initialForm, parseCount, parsePositive, parsePrice } from '../../src/ui/params.ts'
 
@@ -21,11 +22,11 @@ describe('поля ввода', () => {
   })
 
   it('цена металла — число > 0 с точностью до копеек', () => {
-    expect(parsePrice('120')).toBe(120)
-    expect(parsePrice('120,5')).toBe(120.5)
-    expect(parsePrice('120.55')).toBe(120.55)
-    expect(parsePrice(' 95,00 ')).toBe(95)
-    for (const raw of ['', '0', '-10', '120,123', 'abc', '1e2', '10,']) expect(parsePrice(raw)).toBeNull()
+    expect(parsePrice('120000')).toBe(120000)
+    expect(parsePrice('120 000,5')).toBe(120000.5)
+    expect(parsePrice('120\u00a0000.55')).toBe(120000.55)
+    expect(parsePrice(' 95\u202f000,00 ')).toBe(95000)
+    for (const raw of ['', '0', '-10', '120000,123', '120 00', 'abc', '1e2', '10,']) expect(parsePrice(raw)).toBeNull()
   })
 })
 
@@ -48,18 +49,30 @@ describe('проверка формы', () => {
     })
   })
 
-  it('цена металла: валидная попадает в расчёт, невалидная даёт ошибку', () => {
-    const ok = checkForm(form({ metalPrice: '120,5' }), tariffs)
+  it('цена металла за тонну переводится в цену за килограмм для расчёта', () => {
+    const ok = checkForm(form({ metalPrice: '120 000,50' }), tariffs)
     expect(ok.errors).toEqual({})
-    expect(ok.input?.metalPriceRubPerKg).toBe(120.5)
+    expect(ok.input?.metalPriceRubPerKg).toBe(120.0005)
+  })
 
+  it('невалидная цена металла за тонну даёт ошибку', () => {
     const bad = checkForm(form({ metalPrice: '-5' }), tariffs)
     expect(bad.input).toBeNull()
-    expect(bad.errors.metalPrice).toBeDefined()
+    expect(bad.errors.metalPrice).toBe('Введите цену за тонну больше нуля (до копеек)')
 
-    const tooPrecise = checkForm(form({ metalPrice: '120,125' }), tariffs)
+    const tooPrecise = checkForm(form({ metalPrice: '120000,125' }), tariffs)
     expect(tooPrecise.input).toBeNull()
     expect(tooPrecise.errors.metalPrice).toBeDefined()
+  })
+
+  it('в расчёте сохраняются копейки за тонну', () => {
+    const t = structuredClone(tariffs)
+    t.order.marginMm = 0
+    const { input } = checkForm(form({ metalPrice: '120 000,99' }), t)
+    expect(input).not.toBeNull()
+    const quote = calculateQuote(t, { ...input!, cutLengthMm: 4000, pierces: 1, bbox: { width: 1000, height: 1000 } })
+    expect(quote.metal?.rateKopecksPerTonne).toBe(12000099)
+    expect(quote.metal?.perPartKopecks).toBe(282602) // 23,55 кг × 120 000,99 ₽/т ÷ 1000
   })
 
   it('металл заказчика: поле цены металла не проверяется', () => {

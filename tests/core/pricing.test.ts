@@ -156,7 +156,7 @@ describe('контрольные примеры ТЗ 5.1', () => {
     expect(q.metal).not.toBeNull()
     expect(q.metal!.areaM2).toBeCloseTo(0.005, 8)
     expect(q.metal!.massKg).toBeCloseTo(0.11775, 8)
-    expect(q.metal!.rateKopecks).toBe(12000)
+    expect(q.metal!.rateKopecksPerTonne).toBe(12000000)
     expect(q.metal!.perPartKopecks).toBe(1413) // 0.11775 × 120 = 14,13 ₽
     expect(q.pricePerPartKopecks).toBe(10400 + 1413) // 118,13 ₽
     expect(q.totalKopecks).toBe(118130) // 1 181,30 ₽
@@ -209,7 +209,7 @@ describe('контрольные примеры ТЗ 5.1', () => {
       }),
     )
     expect(q.metal).not.toBeNull()
-    expect(q.metal!.rateKopecks).toBeNull()
+    expect(q.metal!.rateKopecksPerTonne).toBeNull()
     expect(q.metal!.perPartKopecks).toBeNull()
     expect(q.pricePerPartKopecks).toBe(10400)
     expect(q.totalRoundedKopecks).toBe(104000)
@@ -244,7 +244,7 @@ describe('контрольные примеры ТЗ 5.1', () => {
 })
 
 describe('металл (Q-11)', () => {
-  it('ручной ввод цены за кг работает при metal = null в тарифах', () => {
+  it('переданная цена металла используется при metal = null в тарифах', () => {
     const a = analyzeFixture('01_plate_rect_2holes.dxf')
     const q = calculateQuote(
       tariffs,
@@ -258,7 +258,7 @@ describe('металл (Q-11)', () => {
         metalPriceRubPerKg: 120,
       }),
     )
-    expect(q.metal!.rateKopecks).toBe(12000)
+    expect(q.metal!.rateKopecksPerTonne).toBe(12000000)
     expect(q.metal!.perPartKopecks).toBe(1865)
     expect(q.complete).toBe(true)
   })
@@ -273,7 +273,7 @@ describe('металл (Q-11)', () => {
       bbox: { width: 100, height: 50 },
       rateRubPerKg: 120,
     })
-    expect(m.rateKopecks).toBe(12000)
+    expect(m.rateKopecksPerTonne).toBe(12000000)
     expect(m.perPartKopecks).toBe(1413)
   })
 

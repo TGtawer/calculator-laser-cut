@@ -162,7 +162,7 @@ describe('металл в разбивке и тексте (Q-11)', () => {
     const lines = quoteLines(q, tariffs.bending).map((l) => ({ ...l, detail: plain(l.detail), amount: plain(l.amount) }))
     expect(lines.at(-1)).toEqual({
       label: 'Металл',
-      detail: '0,16 кг × 120,00 ₽/кг',
+      detail: '0,16 кг по 120 000,00 ₽/т',
       amount: '18,65 ₽',
       onRequest: false,
       note: 'Габарит с отступом 110 × 60 мм, лист 3 мм',
@@ -176,7 +176,7 @@ describe('металл в разбивке и тексте (Q-11)', () => {
         analysis: { bbox: { minX: 0, minY: 0, width: 100, height: 50 }, warnings: [], duplicatesRemoved: 0 },
       }),
     )
-    expect(text).toContain('Металл: 0,16 кг × 120,00 ₽/кг = 18,65 ₽\n  Габарит с отступом 110 × 60 мм, лист 3 мм')
+    expect(text).toContain('Металл: 0,16 кг по 120 000,00 ₽/т = 18,65 ₽\n  Габарит с отступом 110 × 60 мм, лист 3 мм')
     expect(text).toContain('За деталь: 122,65 ₽\nИтого за 10 шт.: 1 227 ₽')
   })
 
@@ -187,7 +187,7 @@ describe('металл в разбивке и тексте (Q-11)', () => {
     const lines = quoteLines(q, t.bending).map((l) => ({ ...l, detail: plain(l.detail), amount: plain(l.amount) }))
     expect(lines.at(-1)).toEqual({
       label: 'Металл',
-      detail: '0,12 кг × 120,00 ₽/кг',
+      detail: '0,12 кг по 120 000,00 ₽/т',
       amount: '14,13 ₽',
       onRequest: false,
       note: 'Габарит 100 × 50 мм, лист 3 мм',
