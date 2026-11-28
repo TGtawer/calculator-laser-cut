@@ -135,6 +135,36 @@ export function ParamsForm({ tariffs, value, errors, onChange }: Props) {
         </Field>
       </div>
 
+      {tariffs.order.sheetLayout && (
+        <div className="sheet-size">
+          <div className="sheet-size__row">
+            <div>
+              <span className="field__label">Габариты листа</span>
+              <span>{errors.sheetWidth || errors.sheetLength ? 'Укажите размеры' : `${value.sheetWidth} × ${value.sheetLength} мм`}</span>
+            </div>
+            <button
+              type="button"
+              className="button button--secondary"
+              aria-expanded={sheetOpen}
+              aria-controls={sheetFieldsId}
+              onClick={() => setSheetOpen(!sheetOpen)}
+            >
+              {sheetOpen ? 'Свернуть' : 'Изменить габариты'}
+            </button>
+          </div>
+          <div id={sheetFieldsId} hidden={!sheetOpen}>
+            <div className="params__row">
+              <Field label="Ширина, мм" error={errors.sheetWidth}>
+                {(props) => <input {...props} className="input" inputMode="decimal" {...numberInputProps('sheetWidth')} />}
+              </Field>
+              <Field label="Длина, мм" error={errors.sheetLength}>
+                {(props) => <input {...props} className="input" inputMode="decimal" {...numberInputProps('sheetLength')} />}
+              </Field>
+            </div>
+          </div>
+        </div>
+      )}
+
       {tariffs.order.includeMaterialCost && (
         <div className="metal-section">
           <div className="field" role="group" aria-labelledby={metalGroupId}>
@@ -182,36 +212,6 @@ export function ParamsForm({ tariffs, value, errors, onChange }: Props) {
               )}
             </Field>
           )}
-        </div>
-      )}
-
-      {tariffs.order.sheetLayout && (
-        <div className="sheet-size">
-          <div className="sheet-size__row">
-            <div>
-              <span className="field__label">Габариты листа</span>
-              <span>{errors.sheetWidth || errors.sheetLength ? 'Укажите размеры' : `${value.sheetWidth} × ${value.sheetLength} мм`}</span>
-            </div>
-            <button
-              type="button"
-              className="button button--secondary"
-              aria-expanded={sheetOpen}
-              aria-controls={sheetFieldsId}
-              onClick={() => setSheetOpen(!sheetOpen)}
-            >
-              {sheetOpen ? 'Свернуть' : 'Изменить габариты'}
-            </button>
-          </div>
-          <div id={sheetFieldsId} hidden={!sheetOpen}>
-            <div className="params__row">
-              <Field label="Ширина, мм" error={errors.sheetWidth}>
-                {(props) => <input {...props} className="input" inputMode="decimal" {...numberInputProps('sheetWidth')} />}
-              </Field>
-              <Field label="Длина, мм" error={errors.sheetLength}>
-                {(props) => <input {...props} className="input" inputMode="decimal" {...numberInputProps('sheetLength')} />}
-              </Field>
-            </div>
-          </div>
         </div>
       )}
 
