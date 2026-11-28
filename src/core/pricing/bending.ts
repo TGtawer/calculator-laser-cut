@@ -28,15 +28,15 @@ export type BendingCost = {
   bendLengthMm: number
   /** Тираж: все гибы заказа, B × N. */
   totalBends: number
-  /** Найденные диапазоны; null — значение вне таблицы. */
+  /** Найденные диапазоны; null - значение вне таблицы. */
   band: ThicknessBand | null
   range: LengthRange | null
   bracket: QuantityBracket | null
-  /** Цена одного гиба, коп.; null — по запросу. */
+  /** Цена одного гиба, коп.; null - по запросу. */
   pricePerBendKopecks: Kopecks | null
-  /** Гибка одной детали B × цена гиба, коп.; null — по запросу. */
+  /** Гибка одной детали B × цена гиба, коп.; null - по запросу. */
   perPartKopecks: Kopecks | null
-  /** Причина «по запросу»; null — цена есть. */
+  /** Причина «по запросу»; null - цена есть. */
   onRequest: BendingOnRequestReason | null
 }
 
@@ -44,11 +44,11 @@ export type BendingCost = {
 export const findThicknessBand = (tariffs: BendingTariffs, thicknessMm: number): ThicknessBand | null =>
   tariffs.thicknessBands.find((b) => thicknessMm <= b.maxThickness) ?? null
 
-/** Диапазон длины гиба: первый, где Lb <= maxLength. Q-6: 500 мм — «до 500» включительно. */
+/** Диапазон длины гиба: первый, где Lb <= maxLength. Q-6: 500 мм - «до 500» включительно. */
 export const findLengthRange = (tariffs: BendingTariffs, bendLengthMm: number): LengthRange | null =>
   tariffs.lengthRanges.find((r) => bendLengthMm <= r.maxLength) ?? null
 
-/** Диапазон тиража, где min <= totalBends <= max; max = null — без верхней границы. */
+/** Диапазон тиража, где min <= totalBends <= max; max = null - без верхней границы. */
 export const findQuantityBracket = (tariffs: BendingTariffs, totalBends: number): QuantityBracket | null =>
   tariffs.quantityBrackets.find((q) => q.min <= totalBends && (q.max === null || totalBends <= q.max)) ?? null
 
@@ -94,12 +94,12 @@ export function bendingOnRequestMessage(reason: BendingOnRequestReason, tariffs:
   const last = <T>(items: readonly T[]): T | undefined => items[items.length - 1]
   switch (reason) {
     case 'THICKNESS_OUT_OF_RANGE':
-      return `Гибка листа толще ${formatNumber(last(tariffs.thicknessBands)?.maxThickness ?? 0)} мм — по запросу`
+      return `Гибка листа толще ${formatNumber(last(tariffs.thicknessBands)?.maxThickness ?? 0)} мм - по запросу`
     case 'LENGTH_OUT_OF_RANGE':
-      return `Гиб длиннее ${formatNumber(last(tariffs.lengthRanges)?.maxLength ?? 0)} мм — по запросу`
+      return `Гиб длиннее ${formatNumber(last(tariffs.lengthRanges)?.maxLength ?? 0)} мм - по запросу`
     case 'QUANTITY_OUT_OF_RANGE':
-      return `Тираж больше ${formatNumber(last(tariffs.quantityBrackets)?.max ?? 0)} гибов — по запросу`
+      return `Тираж больше ${formatNumber(last(tariffs.quantityBrackets)?.max ?? 0)} гибов - по запросу`
     case 'NO_PRICE':
-      return 'Для этой толщины и длины гиба цены в прайсе нет — по запросу'
+      return 'Для этой толщины и длины гиба цены в прайсе нет - по запросу'
   }
 }

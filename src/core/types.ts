@@ -5,7 +5,6 @@ export type Point = { x: number; y: number }
 export type WarningCode =
   | 'UNITS_ASSUMED_MM'
   | 'SUSPICIOUS_SIZE'
-  | 'MULTIPLE_PARTS'
   | 'OPEN_CONTOUR'
   | 'DUPLICATES_REMOVED'
 
@@ -27,7 +26,7 @@ export type Contour = {
   /** Ломаная в мм: дуги и сплайны аппроксимированы. У замкнутого контура последняя точка не повторяет первую. */
   points: Point[]
   closed: boolean
-  /** Внешний контур — не вложен ни в один замкнутый. Вложенные — отверстия. */
+  /** Внешний контур - не вложен ни в один замкнутый. Вложенные - отверстия. */
   isOuter: boolean
   /** Точная длина контура (не длина ломаной), мм. */
   lengthMm: number

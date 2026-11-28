@@ -1,17 +1,17 @@
 import { findCuttingRow } from '../core/pricing/cutting.ts'
 import { KG_PER_TONNE } from '../core/pricing/metal.ts'
 import type { QuoteInput } from '../core/pricing/quote.ts'
-import type { Tariffs } from '../core/pricing/tariffs.ts'
+import { type Tariffs, materialOptions } from '../core/pricing/tariffs.ts'
 
 /** Значения полей формы как их ввёл пользователь: строки, чтобы не терять ввод при ошибке. */
 export type FormValues = {
   materialId: string
-  /** '' — толщина не выбрана. */
+  /** '' - толщина не выбрана. */
   thickness: string
   quantity: string
   /** Металл заказчика: не считать стоимость металла. */
   customerMetal: boolean
-  /** Цена металла, ₽/т; '' — взять из тарифов (или «по запросу», если в тарифах null). */
+  /** Цена металла, ₽/т; '' - взять из тарифов (или «по запросу», если в тарифах null). */
   metalPrice: string
   bendingEnabled: boolean
   bendsPerPart: string
@@ -21,11 +21,11 @@ export type FormValues = {
 export type FieldName = 'thickness' | 'quantity' | 'metalPrice' | 'bendsPerPart' | 'bendLength'
 
 export type FormCheck = {
-  /** Параметры расчёта без данных чертежа; null — форма заполнена не до конца. */
+  /** Параметры расчёта без данных чертежа; null - форма заполнена не до конца. */
   input: Omit<QuoteInput, 'cutLengthMm' | 'pierces' | 'bbox'> | null
-  /** Ошибки введённых значений — показываются у полей. */
+  /** Ошибки введённых значений - показываются у полей. */
   errors: Partial<Record<FieldName, string>>
-  /** Чего не хватает для расчёта — показывается в блоке «Расчёт». */
+  /** Чего не хватает для расчёта - показывается в блоке «Расчёт». */
   missing: string[]
 }
 
@@ -40,27 +40,60 @@ export const initialForm = (tariffs: Tariffs): FormValues => ({
   bendLength: '',
 })
 
-/** Целое число ≥ 1 из поля ввода; null — не целое или меньше 1. */
+const groupSpaces = /[ \u00a0\u202f]/g
+const groupedInteger = String.raw`(?:\d+|\d{1,3}(?:[ \u00a0\u202f]\d{3})+)`
+const countPattern = new RegExp(`^${groupedInteger}$`)
+const positivePattern = new RegExp(String.raw`^${groupedInteger}(\.\d+)?$`)
+const pricePattern = new RegExp(String.raw`^${groupedInteger}(\.\d{1,2})?$`)
+
+/** Добавляет пробелы в целую часть и сохраняет положение курсора относительно цифр. */
+export function formatNumberInput(raw: string, caret: number): { value: string; caret: number } {
+  const text = raw.trim()
+  if (text === '') return { value: '', caret: 0 }
+  const match = /^((?:от\s+)?)(\d(?:[ \u00a0\u202f]*\d)*)((?:[.,]\d*)?(?:\s*₽\s*\/\s*т)?)$/i.exec(text)
+  if (!match) return { value: raw, caret }
+
+  const [, prefix = '', integer = '', tail = ''] = match
+  const trimmedCaret = Math.min(text.length, Math.max(0, caret - (raw.length - raw.trimStart().length)))
+  const digits = integer.replace(groupSpaces, '')
+  const firstGroupLength = digits.length % 3 || 3
+  const groups = digits.slice(firstGroupLength).match(/\d{3}/g) ?? []
+  const grouped = [digits.slice(0, firstGroupLength), ...groups].join(' ')
+  const value = prefix + grouped + tail
+  if (trimmedCaret <= prefix.length || grouped === integer) return { value, caret: trimmedCaret }
+  if (trimmedCaret >= prefix.length + integer.length) {
+    return { value, caret: trimmedCaret + grouped.length - integer.length }
+  }
+
+  const offset = trimmedCaret - prefix.length
+  const digitsBefore = integer.slice(0, offset).replace(groupSpaces, '').length
+  const spacesBefore = Math.max(0, Math.ceil((digitsBefore - firstGroupLength) / 3))
+  const position = digitsBefore + spacesBefore
+  const afterSpace = grouped[position] === ' ' && /\D/.test(integer.charAt(offset - 1))
+  return { value, caret: prefix.length + position + Number(afterSpace) }
+}
+
+/** Целое число ≥ 1 из поля ввода; null - не целое или меньше 1. */
 export function parseCount(raw: string): number | null {
   const s = raw.trim()
-  if (!/^\d+$/.test(s)) return null
-  const n = Number(s)
+  if (!countPattern.test(s)) return null
+  const n = Number(s.replace(groupSpaces, ''))
   return Number.isSafeInteger(n) && n >= 1 ? n : null
 }
 
-/** Положительное число из поля ввода, допускается десятичная запятая; null — не число или ≤ 0. */
+/** Положительное число из поля ввода, допускается десятичная запятая; null - не число или ≤ 0. */
 export function parsePositive(raw: string): number | null {
   const s = raw.trim().replace(',', '.')
-  if (!/^\d+(\.\d+)?$/.test(s)) return null
-  const n = Number(s)
+  if (!positivePattern.test(s)) return null
+  const n = Number(s.replace(groupSpaces, ''))
   return Number.isFinite(n) && n > 0 ? n : null
 }
 
-/** Цена в рублях > 0 с точностью до копейки. Допускаются пробелы между разрядами и десятичная запятая. */
+/** Цена в рублях за тонну с точностью до копейки, в том числе «от 77 100 ₽/т» из карточки товара. */
 export function parsePrice(raw: string): number | null {
-  const s = raw.trim().replace(',', '.')
-  if (!/^(?:\d+|\d{1,3}(?:[ \u00a0\u202f]\d{3})+)(\.\d{1,2})?$/.test(s)) return null
-  const n = Number(s.replace(/[ \u00a0\u202f]/g, ''))
+  const s = raw.trim().replace(/^от\s+/i, '').replace(/\s*₽\s*\/\s*т$/i, '').replace(',', '.')
+  if (!pricePattern.test(s)) return null
+  const n = Number(s.replace(groupSpaces, ''))
   return Number.isFinite(n) && n > 0 ? n : null
 }
 
@@ -71,7 +104,7 @@ export function checkForm(form: FormValues, tariffs: Tariffs): FormCheck {
   const errors: FormCheck['errors'] = {}
   const missing: string[] = []
 
-  const material = tariffs.materials.find((m) => m.id === form.materialId)
+  const material = materialOptions(tariffs).find((option) => option.id === form.materialId)
   const thickness = form.thickness === '' ? null : Number(form.thickness)
   if (thickness === null) missing.push('Выберите толщину листа')
   else if (!material || !findCuttingRow(material, thickness)) errors.thickness = 'Выберите толщину из списка'

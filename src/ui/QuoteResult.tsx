@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { formatRub, formatRubWhole } from '../core/format.ts'
 import type { Quote } from '../core/pricing/quote.ts'
-import { INCOMPLETE_NOTE, type QuoteLine, minimumOrderMessage } from '../core/pricing/summary.ts'
+import { INCOMPLETE_NOTE, type QuoteLine, blankAreaLines, minimumOrderMessage, sheetLayoutLine } from '../core/pricing/summary.ts'
 
 type Props =
   /** Расчёта пока нет: что нужно сделать. */
@@ -10,7 +10,7 @@ type Props =
 
 /**
  * Копирование в буфер. Clipboard API работает только по https и с разрешения браузера;
- * иначе (файл с диска, локальная сеть, запрет) — через выделение текста.
+ * иначе (файл с диска, локальная сеть, запрет) - через выделение текста.
  */
 async function copyToClipboard(text: string): Promise<void> {
   if (window.isSecureContext && navigator.clipboard) {
@@ -36,7 +36,7 @@ async function copyToClipboard(text: string): Promise<void> {
 type CopyState = 'idle' | 'done' | 'failed'
 
 function CopyButton({ text }: { text: string }) {
-  // Статус относится к тексту, который копировали: расчёт изменился — статус сбрасывается сам.
+  // Статус относится к тексту, который копировали: расчёт изменился - статус сбрасывается сам.
   const [result, setResult] = useState<{ text: string; state: CopyState }>({ text, state: 'idle' })
   const state = result.text === text ? result.state : 'idle'
 
@@ -60,7 +60,7 @@ function CopyButton({ text }: { text: string }) {
       </button>
       {state === 'failed' && (
         <>
-          <p className="field__hint">Не удалось скопировать автоматически — выделите текст и скопируйте вручную:</p>
+          <p className="field__hint">Не удалось скопировать автоматически - выделите текст и скопируйте вручную:</p>
           <textarea className="input copy__text" readOnly value={text} rows={12} onFocus={(e) => e.currentTarget.select()} />
         </>
       )}
@@ -81,10 +81,31 @@ export function QuoteResult(props: Props) {
   }
 
   const { quote, lines, copyText } = props
+  const layout = sheetLayoutLine(quote.sheetLayout)
   return (
     <div className="quote">
       <table className="quote__table">
         <tbody>
+          {blankAreaLines(quote).map(({ label, detail, value }) => (
+            <tr key={label}>
+              <th scope="row">
+                {label}
+                <span className="quote__detail">{detail}</span>
+              </th>
+              <td className="quote__amount">{value}</td>
+            </tr>
+          ))}
+          {layout && (
+            <tr>
+              <th scope="row">
+                {layout.label}
+                <span className="quote__detail">{layout.detail}</span>
+              </th>
+              <td className={`quote__amount quote__amount--layout${layout.needsReview ? ' quote__amount--request' : ''}`}>
+                {layout.value}
+              </td>
+            </tr>
+          )}
           {lines.map((line) => (
             <tr key={line.label}>
               <th scope="row">

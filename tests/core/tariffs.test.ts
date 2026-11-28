@@ -71,6 +71,12 @@ describe('parseTariffs: ошибки в тарифах', () => {
     expectInvalid(t, 'pirce', 'pierce')
   })
 
+  it('отклоняет вариант работ с идентификатором базового материала', () => {
+    const t = tariffsCopy()
+    t.materials[0]!.workVariants![0]!.id = t.materials[0]!.id
+    expectInvalid(t, 'materials[0].workVariants[0].id', 'Повторяется id')
+  })
+
   it('отклоняет неизвестное поле в строке резки (например, старое cutAlt)', () => {
     const t = tariffsCopy()
     ;(t.materials[0]!.cutting.rows[0] as Record<string, unknown>)['cutAlt'] = 100
@@ -203,6 +209,13 @@ describe('parseTariffs: ошибки в тарифах', () => {
     const t = tariffsCopy()
     t.order.marginMm = -1
     expectInvalid(t, 'order.marginMm')
+  })
+
+  it('отклоняет раскладку, если отступы занимают всю ширину листа', () => {
+    const t = tariffsCopy()
+    const layout = t.order.sheetLayout!
+    layout.edgeMarginMm = layout.widthMm / 2
+    expectInvalid(t, 'order.sheetLayout.edgeMarginMm')
   })
 
   it('отклоняет удалённое поле wasteFactor в order', () => {

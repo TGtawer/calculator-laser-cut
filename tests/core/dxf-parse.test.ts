@@ -34,7 +34,7 @@ function errorCode(source: string): string {
   return parsed.error.code
 }
 
-/** Габарит с точностью до 1e-6 мм — удобно сравнивать целиком. */
+/** Габарит с точностью до 1e-6 мм - удобно сравнивать целиком. */
 function box(a: DxfAnalysis) {
   const r = (v: number) => Math.round(v * 1e6) / 1e6 + 0
   return { minX: r(a.bbox.minX), minY: r(a.bbox.minY), width: r(a.bbox.width), height: r(a.bbox.height) }
@@ -46,25 +46,25 @@ describe('единицы чертежа $INSUNITS (ТЗ 3.2)', () => {
     [5, 'см', 10],
     [6, 'м', 1000],
     [1, 'дюйм', 25.4],
-  ])('%i (%s) — множитель %f', (insunits, _name, k) => {
+  ])('%i (%s) - множитель %f', (insunits, _name, k) => {
     const a = analyze({ insunits, entities: [line(0, 0, 3, 0)] })
     expect(a.cutLengthMm).toBeCloseTo(3 * k, 9)
     expect(a.warnings).not.toContain('UNITS_ASSUMED_MM')
   })
 
-  it('0 — мм с предупреждением UNITS_ASSUMED_MM', () => {
+  it('0 - мм с предупреждением UNITS_ASSUMED_MM', () => {
     const a = analyze({ insunits: 0, entities: [line(0, 0, 30, 0)] })
     expect(a.cutLengthMm).toBe(30)
     expect(a.warnings).toContain('UNITS_ASSUMED_MM')
   })
 
-  it('нет $INSUNITS — мм с предупреждением UNITS_ASSUMED_MM', () => {
+  it('нет $INSUNITS - мм с предупреждением UNITS_ASSUMED_MM', () => {
     const a = analyze({ insunits: null, entities: [line(0, 0, 30, 0)] })
     expect(a.cutLengthMm).toBe(30)
     expect(a.warnings).toContain('UNITS_ASSUMED_MM')
   })
 
-  it('другие единицы (футы) — ошибка «Неподдерживаемые единицы чертежа»', () => {
+  it('другие единицы (футы) - ошибка «Неподдерживаемые единицы чертежа»', () => {
     const parsed = parseDxf(dxf({ insunits: 2, entities: [line(0, 0, 30, 0)] }))
     expect(parsed.ok).toBe(false)
     if (!parsed.ok) expect(parsed.error).toEqual({ code: 'UNSUPPORTED_UNITS', message: 'Неподдерживаемые единицы чертежа' })
@@ -72,7 +72,7 @@ describe('единицы чертежа $INSUNITS (ТЗ 3.2)', () => {
 })
 
 describe('формат файла (ТЗ 3.1)', () => {
-  it('бинарный DXF — «Сохраните чертёж в формате DXF (ASCII)»', () => {
+  it('бинарный DXF - «Сохраните чертёж в формате DXF (ASCII)»', () => {
     const parsed = parseDxf('AutoCAD Binary DXF\r\n\u001a\u0000\u0000\u0000')
     expect(parsed).toEqual({
       ok: false,
@@ -80,16 +80,16 @@ describe('формат файла (ТЗ 3.1)', () => {
     })
   })
 
-  it('DWG, прочитанный как текст, — тоже UNSUPPORTED_FORMAT', () => {
+  it('DWG, прочитанный как текст, - тоже UNSUPPORTED_FORMAT', () => {
     expect(errorCode('AC1032\u0000\u0000\u0000\u0000\u0000\u0003')).toBe('UNSUPPORTED_FORMAT')
   })
 
-  it('пустой файл и не-DXF — PARSE_FAILED', () => {
+  it('пустой файл и не-DXF - PARSE_FAILED', () => {
     expect(errorCode('')).toBe('PARSE_FAILED')
     expect(errorCode('просто текст\nне чертёж')).toBe('PARSE_FAILED')
   })
 
-  it('только текст, без геометрии — NO_GEOMETRY', () => {
+  it('только текст, без геометрии - NO_GEOMETRY', () => {
     expect(errorCode(dxf({ entities: [text(0, 0, 'ДЕТАЛЬ')] }))).toBe('NO_GEOMETRY')
   })
 
@@ -128,13 +128,13 @@ describe('игнорируемые объекты (ТЗ 3.3)', () => {
 })
 
 describe('полилинии', () => {
-  it('bulge > 0 — дуга против часовой: при движении вправо выгибается вниз', () => {
+  it('bulge > 0 - дуга против часовой: при движении вправо выгибается вниз', () => {
     expect(box(analyze({ entities: [lwpolyline([[0, 0, 1], [40, 0]], false)] }))).toEqual({
       minX: 0, minY: -20, width: 40, height: 20,
     })
   })
 
-  it('bulge < 0 — дуга по часовой: выгибается вверх', () => {
+  it('bulge < 0 - дуга по часовой: выгибается вверх', () => {
     expect(box(analyze({ entities: [lwpolyline([[0, 0, -1], [40, 0]], false)] }))).toEqual({
       minX: 0, minY: 0, width: 40, height: 20,
     })
@@ -184,7 +184,7 @@ describe('зеркальные объекты: нормаль (0, 0, −1)', () 
 })
 
 describe('блоки INSERT (ТЗ 3.3)', () => {
-  // Пластина 10×5 с отверстием R1; базовая точка блока — (0, 0).
+  // Пластина 10×5 с отверстием R1; базовая точка блока - (0, 0).
   const plate: Block = { name: 'PLATE', entities: [...rectLines(0, 0, 10, 5), circle(5, 2.5, 1)] }
   const plateLength = 30 + 2 * Math.PI
 
@@ -234,7 +234,7 @@ describe('блоки INSERT (ТЗ 3.3)', () => {
     expect(a.closedContours).toBe(12)
     expect(a.outerContours).toBe(6)
     expect(box(a)).toEqual({ minX: 0, minY: 0, width: 50, height: 15 })
-    expect(a.warnings).toContain('MULTIPLE_PARTS')
+    expect(a.warnings).toEqual([])
   })
 
   it('вложенные блоки', () => {

@@ -11,7 +11,7 @@ export type AnalyzeOptions = {
 
 /**
  * Анализ разобранного чертежа: контуры, длина реза, прожиги, габарит, предупреждения (ТЗ 3.5).
- * Разбор файла (parseDxf) — отдельно, чтобы при переключении слоёв не читать файл заново.
+ * Разбор файла (parseDxf) - отдельно, чтобы при переключении слоёв не читать файл заново.
  */
 export function analyzeDxf(drawing: ParsedDrawing, options: AnalyzeOptions = {}): DxfAnalysis {
   const disabled = new Set(options.disabledLayers ?? [])
@@ -43,7 +43,6 @@ export function analyzeDxf(drawing: ParsedDrawing, options: AnalyzeOptions = {})
   if (drafts.length > 0 && (size < DXF_CONFIG.minPlausibleSizeMm || size > DXF_CONFIG.maxPlausibleSizeMm)) {
     warnings.push('SUSPICIOUS_SIZE')
   }
-  if (outerContours > 1) warnings.push('MULTIPLE_PARTS')
   if (openContours > 0) warnings.push('OPEN_CONTOUR')
   if (removed > 0) warnings.push('DUPLICATES_REMOVED')
 

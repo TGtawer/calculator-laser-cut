@@ -17,7 +17,7 @@ export function splineDomain(seg: SplineSegment): [number, number] {
   return [seg.knots[seg.degree]!, seg.knots[seg.controlPoints.length]!]
 }
 
-/** Точка NURBS-кривой при параметре t — алгоритм де Бура в однородных координатах (ТЗ 3.3). */
+/** Точка NURBS-кривой при параметре t - алгоритм де Бура в однородных координатах (ТЗ 3.3). */
 export function evaluateSpline(seg: SplineSegment, t: number): Point {
   const { degree: p, controlPoints: points, knots: u, weights } = seg
   const n = points.length

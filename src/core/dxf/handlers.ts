@@ -4,9 +4,9 @@ import type { Vec3 } from './geometry.ts'
 /*
  * Собственные обработчики сущностей для dxf-parser. Встроенные теряют данные,
  * от которых зависит геометрия:
- *   CIRCLE  — нормаль (210/220/230): зеркальная окружность встаёт не на своё место;
- *   ELLIPSE — нормаль: дуга зеркального эллипса уходит на другую сторону;
- *   SPLINE  — веса (41): рациональный сплайн (часто так выгружают дуги) искажается.
+ *   CIRCLE  - нормаль (210/220/230): зеркальная окружность встаёт не на своё место;
+ *   ELLIPSE - нормаль: дуга зеркального эллипса уходит на другую сторону;
+ *   SPLINE  - веса (41): рациональный сплайн (часто так выгружают дуги) искажается.
  */
 
 type Common = { layer?: string; inPaperSpace?: boolean }
@@ -38,7 +38,7 @@ function readEntity(scanner: DxfScanner, onGroup: (code: number, value: number) 
 
 const point = (): Vec3 => ({ x: 0, y: 0, z: 0 })
 
-/** Записывает координату в точку по коду группы: base — X, base + 10 — Y, base + 20 — Z. */
+/** Записывает координату в точку по коду группы: base - X, base + 10 - Y, base + 20 - Z. */
 function setCoord(p: Vec3, code: number, base: number, value: number): void {
   if (code === base) p.x = value
   else if (code === base + 10) p.y = value
