@@ -195,11 +195,26 @@ const bendingSchema = z
 
 // ---------- Заказ ----------
 
+const sheetLayoutSchema = z
+  .strictObject({
+    widthMm: z.number().positive(),
+    heightMm: z.number().positive(),
+    edgeMarginMm: z.number().nonnegative(),
+    partGapMm: z.number().nonnegative(),
+    allowRotation: z.boolean(),
+  })
+  .refine(({ widthMm, heightMm, edgeMarginMm }) => 2 * edgeMarginMm < Math.min(widthMm, heightMm), {
+    path: ['edgeMarginMm'],
+    message: 'Отступы должны оставлять рабочую зону внутри листа',
+  })
+
 const orderSchema = z.strictObject({
   /** Учитывать ли стоимость металла по умолчанию (Q-11, отменяет Q-7). */
   includeMaterialCost: z.boolean(),
   /** Технологический отступ по краям габарита детали при расчёте расхода металла, мм с каждой стороны. */
   marginMm: z.number().nonnegative(),
+  /** Параметры ориентировочной раскладки на листе. */
+  sheetLayout: sheetLayoutSchema.optional(),
   /** Минимальная сумма заказа в рублях; null - не задана (Q-8: сейчас 5 000 ₽). */
   minOrderRub: rubSchema.nullable(),
   notes: z.string().optional(),
@@ -239,6 +254,7 @@ export type MaterialOption = Material & { workSurchargePercent: number }
 export type CuttingRow = Material['cutting']['rows'][number]
 export type BendingTariffs = Tariffs['bending']
 export type OrderTariffs = Tariffs['order']
+export type SheetLayoutSettings = NonNullable<OrderTariffs['sheetLayout']>
 export type QuantityBracket = BendingTariffs['quantityBrackets'][number]
 export type ThicknessBand = BendingTariffs['thicknessBands'][number]
 export type LengthRange = BendingTariffs['lengthRanges'][number]

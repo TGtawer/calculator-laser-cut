@@ -2,6 +2,7 @@ import { type BendingCost, bendingCost } from './bending.ts'
 import { type Kopecks, PricingInputError, requireInteger, roundUpToRuble, rubToKopecks } from './common.ts'
 import { type CuttingCost, cuttingCost } from './cutting.ts'
 import { type MetalCost, type PartBbox, blankSize, metalCost } from './metal.ts'
+import { type SheetLayout, calculateSheetLayout } from './sheetLayout.ts'
 import { type MaterialOption, type Tariffs, materialOptions } from './tariffs.ts'
 
 export type QuoteInput = {
@@ -35,6 +36,8 @@ export type Quote = {
   bending: BendingCost | null
   /** Площадь заготовки с технологическим отступом на одну деталь, м². */
   blankAreaM2: number
+  /** Оценка раскладки на настроенном формате листа. */
+  sheetLayout: SheetLayout | null
   /** Надбавка к рассчитанной стоимости работ на одну деталь, коп. */
   workSurchargeKopecks: Kopecks
   /** null - металл не учитывается (отключено в тарифах или металл заказчика). */
@@ -100,6 +103,9 @@ export function calculateQuote(tariffs: Tariffs, input: QuoteInput): Quote {
       : null
 
   const blankAreaM2 = (metal ?? blankSize(input.bbox, tariffs.order.marginMm)).areaM2
+  const sheetLayout = tariffs.order.sheetLayout
+    ? calculateSheetLayout(input.bbox, quantity, tariffs.order.sheetLayout)
+    : null
   const workItems = [cutting.cutPerPartKopecks, cutting.piercePerPartKopecks]
   if (bending) workItems.push(bending.perPartKopecks)
   const workPerPartKopecks = workItems.reduce<number>((sum, item) => sum + (item ?? 0), 0)
@@ -117,6 +123,7 @@ export function calculateQuote(tariffs: Tariffs, input: QuoteInput): Quote {
     cutting,
     bending,
     blankAreaM2,
+    sheetLayout,
     workSurchargeKopecks,
     metal,
     customerMetal,

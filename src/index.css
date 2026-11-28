@@ -612,6 +612,10 @@ ul.alert {
   color: var(--color-warn-text);
 }
 
+.quote__amount--layout {
+  white-space: normal;
+}
+
 .quote__total {
   display: flex;
   flex-wrap: wrap;

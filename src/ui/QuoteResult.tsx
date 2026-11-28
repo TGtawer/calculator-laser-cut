@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { formatRub, formatRubWhole } from '../core/format.ts'
 import type { Quote } from '../core/pricing/quote.ts'
-import { INCOMPLETE_NOTE, type QuoteLine, blankAreaLines, minimumOrderMessage } from '../core/pricing/summary.ts'
+import { INCOMPLETE_NOTE, type QuoteLine, blankAreaLines, minimumOrderMessage, sheetLayoutLine } from '../core/pricing/summary.ts'
 
 type Props =
   /** Расчёта пока нет: что нужно сделать. */
@@ -81,6 +81,7 @@ export function QuoteResult(props: Props) {
   }
 
   const { quote, lines, copyText } = props
+  const layout = sheetLayoutLine(quote.sheetLayout)
   return (
     <div className="quote">
       <table className="quote__table">
@@ -94,6 +95,17 @@ export function QuoteResult(props: Props) {
               <td className="quote__amount">{value}</td>
             </tr>
           ))}
+          {layout && (
+            <tr>
+              <th scope="row">
+                {layout.label}
+                <span className="quote__detail">{layout.detail}</span>
+              </th>
+              <td className={`quote__amount quote__amount--layout${layout.needsReview ? ' quote__amount--request' : ''}`}>
+                {layout.value}
+              </td>
+            </tr>
+          )}
           {lines.map((line) => (
             <tr key={line.label}>
               <th scope="row">

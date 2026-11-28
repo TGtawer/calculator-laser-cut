@@ -12,6 +12,7 @@ import {
   minimumOrderMessage,
   quoteLines,
   quoteText,
+  sheetLayoutLine,
 } from '../../src/core/pricing/summary.ts'
 import { parseTariffs } from '../../src/core/pricing/tariffs.ts'
 
@@ -110,6 +111,20 @@ describe('разбивка расчёта', () => {
     })
     expect(plain(lines.at(-1)!.amount)).toBe('15,60 ₽')
   })
+
+  it('раскладка доступна и для металла заказчика', () => {
+    const q = quote({ bbox: { width: 1300, height: 1600 }, quantity: 2, customerMetal: true }, tariffs)
+    const line = sheetLayoutLine(q.sheetLayout)
+    expect(line).toMatchObject({ value: '2 листа на заказ', needsReview: false })
+    expect(plain(line!.detail)).toBe('Лист 1 500 × 3 000 мм · 1 изделие на лист')
+    expect(q.totalKopecks).toBe(20800)
+  })
+
+  it('принимает старые тарифы без настроек раскладки', () => {
+    const oldTariffs = structuredClone(tariffs)
+    delete oldTariffs.order.sheetLayout
+    expect(sheetLayoutLine(quote({}, parseTariffs(oldTariffs)).sheetLayout)).toBeNull()
+  })
 })
 
 describe('текст «Скопировать расчёт»', () => {
@@ -128,6 +143,7 @@ describe('текст «Скопировать расчёт»', () => {
         'Габарит детали: 100 × 50 мм',
         'Площадь заготовки на изделие: 0,007 м²',
         'Площадь заготовок на весь заказ: 0,066 м²',
+        'Раскладка по габаритам: Лист 1 500 × 3 000 мм · 675 изделий на лист – 1 лист на заказ',
         'Длина реза детали: 362,8 мм, прожигов: 3',
         '',
         'Резка: 362,8 мм × 113,00 ₽/м = 41,00 ₽',
@@ -139,6 +155,19 @@ describe('текст «Скопировать расчёт»', () => {
         DISCLAIMER,
       ].join('\n'),
     )
+  })
+
+  it('добавляет предупреждение в копируемый расчёт, если габарит не входит на лист', () => {
+    const bbox = { minX: 0, minY: 0, width: 1510, height: 1510 }
+    const q = quote({ bbox, quantity: 1 })
+    expect(sheetLayoutLine(q.sheetLayout)).toMatchObject({ value: 'Требуется проверка раскладки', needsReview: true })
+    const text = plain(quoteText({
+      quote: q,
+      bendingTariffs: tariffs.bending,
+      fileName: 'large.dxf',
+      analysis: { bbox, warnings: [], duplicatesRemoved: 0 },
+    }))
+    expect(text).toContain('Раскладка по габаритам: Лист 1 500 × 3 000 мм – Требуется проверка раскладки')
   })
 
   it('неполный итог и замечания к чертежу', () => {

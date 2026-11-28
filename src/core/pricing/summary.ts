@@ -23,6 +23,8 @@ export const minimumOrderMessage = (minimumKopecks: Kopecks): string =>
   `Сумма заказа ниже минимальной - ${formatRubWhole(minimumKopecks)}. Менеджер уточнит условия.`
 
 const BENDS = ['гиб', 'гиба', 'гибов'] as const
+const PARTS = ['изделие', 'изделия', 'изделий'] as const
+const SHEETS = ['лист', 'листа', 'листов'] as const
 
 export type QuoteLine = {
   label: string
@@ -61,6 +63,23 @@ export function blankAreaLines({ blankAreaM2, quantity }: Pick<Quote, 'blankArea
     })
   }
   return lines
+}
+
+/** Оценка вместимости листа для экрана и копируемого расчёта. */
+export function sheetLayoutLine(layout: Quote['sheetLayout']) {
+  if (!layout) return null
+  const { widthMm, heightMm, partsPerSheet, sheetsRequired } = layout
+  const sheet = `Лист ${formatDecimal(widthMm, 1)} × ${mm(heightMm)}`
+  const label = 'Раскладка по габаритам'
+  if (sheetsRequired === null) {
+    return { label, detail: sheet, value: 'Требуется проверка раскладки', needsReview: true }
+  }
+  return {
+    label,
+    detail: `${sheet} · ${formatDecimal(partsPerSheet, 0)} ${plural(partsPerSheet, PARTS)} на лист`,
+    value: `${formatDecimal(sheetsRequired, 0)} ${plural(sheetsRequired, SHEETS)} на заказ`,
+    needsReview: false,
+  }
 }
 
 function line(
@@ -151,6 +170,7 @@ export type QuoteTextInput = {
 /** Текст для кнопки «Скопировать расчёт»: для мессенджера или почты. */
 export function quoteText({ quote, bendingTariffs, fileName, analysis }: QuoteTextInput): string {
   const { cutting, quantity } = quote
+  const layout = sheetLayoutLine(quote.sheetLayout)
   const out = [
     'Расчёт лазерной резки и гибки',
     `Чертёж: ${fileName}`,
@@ -158,6 +178,7 @@ export function quoteText({ quote, bendingTariffs, fileName, analysis }: QuoteTe
     `Количество: ${quantity} шт.`,
     `Габарит детали: ${formatDecimal(analysis.bbox.width, 1)} × ${mm(analysis.bbox.height)}`,
     ...blankAreaLines(quote).map(({ label, value }) => `${label}: ${value}`),
+    ...(layout ? [`${layout.label}: ${layout.detail} – ${layout.value}`] : []),
     `Длина реза детали: ${mm(cutting.cutLengthMm)}, прожигов: ${cutting.pierces}`,
     '',
   ]

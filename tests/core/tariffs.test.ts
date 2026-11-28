@@ -211,6 +211,13 @@ describe('parseTariffs: ошибки в тарифах', () => {
     expectInvalid(t, 'order.marginMm')
   })
 
+  it('отклоняет раскладку, если отступы занимают всю ширину листа', () => {
+    const t = tariffsCopy()
+    const layout = t.order.sheetLayout!
+    layout.edgeMarginMm = layout.widthMm / 2
+    expectInvalid(t, 'order.sheetLayout.edgeMarginMm')
+  })
+
   it('отклоняет удалённое поле wasteFactor в order', () => {
     const t = tariffsCopy()
     ;(t.order as Record<string, unknown>)['wasteFactor'] = 1.1
