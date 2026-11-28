@@ -21,18 +21,18 @@ export type CuttingCost = {
   thicknessMm: number
   cutLengthMm: number
   pierces: number
-  /** Цена резки, коп. за 1 м; null — по запросу. */
+  /** Цена резки, коп. за 1 м; null - по запросу. */
   cutRateKopecks: Kopecks | null
-  /** Цена прожига, коп. за 1 шт.; null — по запросу. */
+  /** Цена прожига, коп. за 1 шт.; null - по запросу. */
   pierceRateKopecks: Kopecks | null
-  /** Резка одной детали, коп.; null — по запросу. */
+  /** Резка одной детали, коп.; null - по запросу. */
   cutPerPartKopecks: Kopecks | null
-  /** Прожиги одной детали, коп.; null — по запросу. */
+  /** Прожиги одной детали, коп.; null - по запросу. */
   piercePerPartKopecks: Kopecks | null
 }
 
 /**
- * Толщины, доступные для резки, по возрастанию — для выпадающего списка.
+ * Толщины, доступные для резки, по возрастанию - для выпадающего списка.
  * Максимум задан тарифами: сейчас 10 мм (Q-2), строки 12–16 мм не используются.
  */
 export const cuttingThicknesses = (material: Material): number[] => material.cutting.rows.map((r) => r.thickness)
@@ -42,9 +42,9 @@ export const findCuttingRow = (material: Material, thicknessMm: number): Cutting
 
 /**
  * Стоимость резки одной детали (ТЗ 5):
- *   cutPerPart    = L × rowCut.cut     (L — длина реза в метрах)
+ *   cutPerPart    = L × rowCut.cut     (L - длина реза в метрах)
  *   piercePerPart = P × rowCut.pierce
- * Каждая статья округляется до копеек, половина — вверх.
+ * Каждая статья округляется до копеек, половина - вверх.
  */
 export function cuttingCost(material: Material, input: CuttingInput): CuttingCost {
   const { thicknessMm, cutLengthMm, pierces } = input
@@ -63,7 +63,7 @@ export function cuttingCost(material: Material, input: CuttingInput): CuttingCos
     pierces,
     cutRateKopecks,
     pierceRateKopecks,
-    // мм × коп/м ÷ 1000: сначала умножение — для целых миллиметров результат точный.
+    // мм × коп/м ÷ 1000: сначала умножение - для целых миллиметров результат точный.
     cutPerPartKopecks: cutRateKopecks === null ? null : Math.round((cutLengthMm * cutRateKopecks) / 1000),
     piercePerPartKopecks: pierceRateKopecks === null ? null : pierces * pierceRateKopecks,
   }

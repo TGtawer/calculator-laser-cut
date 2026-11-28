@@ -7,7 +7,7 @@ const ERROR_MESSAGES: Record<DxfErrorCode, string> = {
   FILE_TOO_LARGE: `Файл больше ${DXF_CONFIG.maxFileSizeBytes / 1024 / 1024} МБ. Загрузите чертёж меньшего размера`,
   UNSUPPORTED_UNITS: 'Неподдерживаемые единицы чертежа',
   PARSE_FAILED:
-    'Не удалось прочитать файл. Возможно, он повреждён — сохраните чертёж заново в формате DXF (ASCII)',
+    'Не удалось прочитать файл. Возможно, он повреждён - сохраните чертёж заново в формате DXF (ASCII)',
   NO_GEOMETRY: 'В чертеже не найдено контуров для резки',
 }
 
@@ -17,13 +17,11 @@ export const dxfError = (code: DxfErrorCode): DxfError => ({ code, message: ERRO
 export function warningMessage(code: WarningCode, duplicatesRemoved = 0): string {
   switch (code) {
     case 'UNITS_ASSUMED_MM':
-      return 'В чертеже не указаны единицы — размеры считаются в миллиметрах'
+      return 'В чертеже не указаны единицы - размеры считаются в миллиметрах'
     case 'SUSPICIOUS_SIZE':
       return 'Проверьте единицы чертежа'
-    case 'MULTIPLE_PARTS':
-      return 'В файле, похоже, несколько деталей — расчёт идёт как за одну'
     case 'OPEN_CONTOUR':
-      return 'В чертеже есть незамкнутые контуры — проверьте файл'
+      return 'В чертеже есть незамкнутые контуры - проверьте файл'
     case 'DUPLICATES_REMOVED':
       return `Удалены совпадающие дубли элементов: ${duplicatesRemoved}`
   }

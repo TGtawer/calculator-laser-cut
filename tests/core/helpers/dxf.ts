@@ -1,5 +1,5 @@
 /*
- * Генератор минимальных ASCII DXF для тестов: пары «код группы — значение».
+ * Генератор минимальных ASCII DXF для тестов: пары «код группы - значение».
  * Опция extra добавляет произвольные группы (нормаль 210/220/230, пространство листа 67 и т.п.).
  */
 
@@ -36,7 +36,7 @@ export const lwpolyline = (vertices: number[][], closed: boolean, o?: Opts): Gro
   ...vertices.flatMap(([x = 0, y = 0, bulge = 0]): Groups => [[10, x], [20, y], ...(bulge ? ([[42, bulge]] as Groups) : [])]),
 ]
 
-/** Старая полилиния POLYLINE + VERTEX + SEQEND. flags: 1 — замкнута, 8 — 3D. */
+/** Старая полилиния POLYLINE + VERTEX + SEQEND. flags: 1 - замкнута, 8 - 3D. */
 export const polyline = (vertices: number[][], flags: number, o?: Opts): Groups => [
   ...head('POLYLINE', o),
   [66, 1],
@@ -119,7 +119,7 @@ export const rectLines = (x: number, y: number, w: number, h: number, o?: Opts):
 
 export type Block = { name: string; base?: [number, number]; entities: Groups[] }
 
-/** Документ DXF. insunits: null — без $INSUNITS. */
+/** Документ DXF. insunits: null - без $INSUNITS. */
 export function dxf(doc: { insunits?: number | null; entities: Groups[]; blocks?: Block[] }): string {
   const g: Groups = [[0, 'SECTION'], [2, 'HEADER'], [9, '$ACADVER'], [1, 'AC1015']]
   if (doc.insunits !== null) g.push([9, '$INSUNITS'], [70, doc.insunits ?? 4])

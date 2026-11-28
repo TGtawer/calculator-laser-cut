@@ -215,7 +215,7 @@ p {
   border-radius: 6px;
   background: var(--color-surface);
   color: var(--color-text);
-  /* 16px: меньше — iOS приближает страницу при фокусе. */
+  /* 16px: меньше - iOS приближает страницу при фокусе. */
   font: inherit;
   font-size: 16px;
 }
@@ -372,7 +372,7 @@ ul.alert {
   background-size: 20px 20px;
 }
 
-/* На телефоне превью маленькое — линии тоньше, чтобы мелкие отверстия не слипались. */
+/* На телефоне превью маленькое - линии тоньше, чтобы мелкие отверстия не слипались. */
 @media (max-width: 599px) {
   .preview__canvas {
     --stroke: 0.75px;

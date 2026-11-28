@@ -16,7 +16,7 @@ export type LineSegment = { kind: 'line'; a: Point; b: Point }
  */
 export type ArcSegment = { kind: 'arc'; c: Point; u: Point; v: Point; t0: number; t1: number }
 
-/** NURBS-кривая (SPLINE). weights = null — все веса равны 1. */
+/** NURBS-кривая (SPLINE). weights = null - все веса равны 1. */
 export type SplineSegment = {
   kind: 'spline'
   degree: number
@@ -57,7 +57,7 @@ export function normalize3(v: Vec3): Vec3 | null {
   return len < EPS ? null : { x: v.x / len, y: v.y / len, z: v.z / len }
 }
 
-/** Векторное произведение n × v в 3D, результат — проекция на XY. */
+/** Векторное произведение n × v в 3D, результат - проекция на XY. */
 export function crossXY(n: Vec3, v: Vec3): Point {
   const r = cross3(n, v)
   return { x: r.x, y: r.y }
@@ -70,7 +70,7 @@ export type Affine = { a: number; b: number; c: number; d: number; e: number; f:
 
 export const IDENTITY: Affine = { a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 }
 
-/** Композиция: compose(m1, m2)(p) = m1(m2(p)) — сначала применяется последнее. */
+/** Композиция: compose(m1, m2)(p) = m1(m2(p)) - сначала применяется последнее. */
 export function compose(...ms: Affine[]): Affine {
   return ms.reduce(
     (p, q) => ({
@@ -104,9 +104,9 @@ export const applyVector = (m: Affine, v: Point): Point => ({ x: m.a * v.x + m.c
 
 /**
  * Перевод из системы координат объекта (OCS) в мировую (WCS), проекция на XY.
- * Алгоритм произвольной оси из спецификации DXF. Нормаль (0, 0, 1) — тождественное
- * преобразование; (0, 0, −1) — зеркало по X (так часто выгружают зеркальные детали).
- * elevation — координата Z объекта в OCS.
+ * Алгоритм произвольной оси из спецификации DXF. Нормаль (0, 0, 1) - тождественное
+ * преобразование; (0, 0, −1) - зеркало по X (так часто выгружают зеркальные детали).
+ * elevation - координата Z объекта в OCS.
  */
 export function ocsToWcs(normal: Vec3, elevation = 0): Affine {
   const n = normalize3(normal)
@@ -141,7 +141,7 @@ export function circleArc(center: Point, r: number, t0 = 0, t1 = t0 + TAU): ArcS
 
 /**
  * Дуга сегмента полилинии с bulge ≠ 0 (ТЗ 3.3): θ = 4·atan(|b|), r = c / (2·sin(θ/2)),
- * где c — хорда. b > 0 — против часовой стрелки, b < 0 — по часовой.
+ * где c - хорда. b > 0 - против часовой стрелки, b < 0 - по часовой.
  */
 export function bulgeArc(p1: Point, p2: Point, bulge: number): ArcSegment {
   const chord = distance(p1, p2)
@@ -173,7 +173,7 @@ export function isCircular(seg: ArcSegment): boolean {
   return Math.abs(ru - rv) <= 1e-9 * scale && Math.abs(dot(seg.u, seg.v)) <= 1e-9 * scale * scale
 }
 
-/** Угол дуги, приведённый в (0, 2π]. Совпадающие углы — полный оборот (ТЗ 3.3). */
+/** Угол дуги, приведённый в (0, 2π]. Совпадающие углы - полный оборот (ТЗ 3.3). */
 export function normalizeSweep(start: number, end: number): number {
   const sweep = (end - start) % TAU
   return sweep <= EPS ? sweep + TAU : sweep

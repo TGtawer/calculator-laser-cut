@@ -3,7 +3,7 @@ import { type DragEvent, useId, useRef, useState } from 'react'
 type Props = {
   onFile: (file: File) => void
   busy: boolean
-  /** Имя загруженного файла; null — файла нет. */
+  /** Имя загруженного файла; null - файла нет. */
   fileName: string | null
   error: string | null
 }

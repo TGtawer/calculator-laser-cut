@@ -69,7 +69,7 @@ const cuttingRowSchema = z.strictObject({
   cut: priceSchema,
   /** Прожиг, ₽ за 1 шт. */
   pierce: priceSchema,
-  /** Металл, ₽ за 1 кг; null — по запросу (или вводится вручную). */
+  /** Металл, ₽ за 1 кг; null - по запросу (или вводится вручную). */
   metal: priceSchema,
 })
 
@@ -77,6 +77,10 @@ const materialSchema = z.strictObject({
   id: idSchema,
   name: labelSchema,
   grades: z.array(z.string().min(1)),
+  /** Варианты с теми же базовыми тарифами и надбавкой только за работы. */
+  workVariants: z
+    .array(z.strictObject({ id: idSchema, name: labelSchema, workSurchargePercent: z.int().nonnegative() }))
+    .optional(),
   /** Плотность материала, кг/м³ (например, 7850 для углеродистой стали). */
   densityKgM3: z.number().positive(),
   cutting: z.strictObject({
@@ -97,7 +101,7 @@ const quantityBracketSchema = z.strictObject({
   label: labelSchema,
   /** Нижняя граница тиража, гибов (включительно). */
   min: z.int().min(1),
-  /** Верхняя граница тиража, гибов (включительно); null — без верхней границы. */
+  /** Верхняя граница тиража, гибов (включительно); null - без верхней границы. */
   max: z.int().min(1).nullable(),
 })
 
@@ -117,7 +121,7 @@ const lengthRangeSchema = z.strictObject({
   assumed: z.boolean().optional(),
   assumedNote: z.string().optional(),
   /**
-   * Ключ — id диапазона толщины. Значение — цены за гиб по колонкам тиража
+   * Ключ - id диапазона толщины. Значение - цены за гиб по колонкам тиража
    * (в порядке quantityBrackets) или null, если строки нет в прайсе.
    */
   prices: z.record(z.string(), z.array(priceSchema).nullable()),
@@ -196,7 +200,7 @@ const orderSchema = z.strictObject({
   includeMaterialCost: z.boolean(),
   /** Технологический отступ по краям габарита детали при расчёте расхода металла, мм с каждой стороны. */
   marginMm: z.number().nonnegative(),
-  /** Минимальная сумма заказа в рублях; null — не задана (Q-8: сейчас 5 000 ₽). */
+  /** Минимальная сумма заказа в рублях; null - не задана (Q-8: сейчас 5 000 ₽). */
   minOrderRub: rubSchema.nullable(),
   notes: z.string().optional(),
 })
@@ -212,13 +216,26 @@ export const tariffsSchema = z.strictObject({
   materials: z
     .array(materialSchema)
     .min(1)
-    .superRefine((materials, ctx) => checkUniqueIds(materials, reporter(ctx))),
+    .superRefine((materials, ctx) => {
+      const report = reporter(ctx)
+      checkUniqueIds(materials, report)
+      const usedIds = new Set(materials.map((material) => material.id))
+      materials.forEach((material, i) => {
+        material.workVariants?.forEach((variant, j) => {
+          if (usedIds.has(variant.id)) {
+            report([i, 'workVariants', j, 'id'], `Повторяется id «${variant.id}»`)
+          }
+          usedIds.add(variant.id)
+        })
+      })
+    }),
   bending: bendingSchema,
   order: orderSchema,
 })
 
 export type Tariffs = z.infer<typeof tariffsSchema>
 export type Material = Tariffs['materials'][number]
+export type MaterialOption = Material & { workSurchargePercent: number }
 export type CuttingRow = Material['cutting']['rows'][number]
 export type BendingTariffs = Tariffs['bending']
 export type OrderTariffs = Tariffs['order']
@@ -226,7 +243,15 @@ export type QuantityBracket = BendingTariffs['quantityBrackets'][number]
 export type ThicknessBand = BendingTariffs['thicknessBands'][number]
 export type LengthRange = BendingTariffs['lengthRanges'][number]
 
-/** Тарифы не прошли проверку. В message — список проблем с путями к полям. */
+/** Все варианты в выпадающем списке со ссылкой на их базовые тарифы. */
+export function materialOptions(tariffs: Tariffs): MaterialOption[] {
+  return tariffs.materials.flatMap((material) => [
+    { ...material, workSurchargePercent: 0 },
+    ...(material.workVariants ?? []).map((variant) => ({ ...material, ...variant })),
+  ])
+}
+
+/** Тарифы не прошли проверку. В message - список проблем с путями к полям. */
 export class TariffsValidationError extends Error {
   override name = 'TariffsValidationError'
 }

@@ -25,7 +25,7 @@ function arcPieces(seg: ArcSegment): number {
   return Math.max(1, Math.ceil((perTurn * sweep) / TAU))
 }
 
-/** Ломаная вдоль элемента — для превью и проверки вложенности. */
+/** Ломаная вдоль элемента - для превью и проверки вложенности. */
 export function sampleSegment(seg: Segment): Point[] {
   switch (seg.kind) {
     case 'line':
@@ -71,7 +71,7 @@ export function segmentEnd(seg: Segment): Point {
 export const shapeStart = (shape: Shape): Point => segmentStart(shape.segments[0]!)
 export const shapeEnd = (shape: Shape): Point => segmentEnd(shape.segments[shape.segments.length - 1]!)
 
-/** Габарит элемента: дуги — точно, сплайны — по точкам кривой. */
+/** Габарит элемента: дуги - точно, сплайны - по точкам кривой. */
 export function segmentBbox(seg: Segment): Bbox {
   if (seg.kind === 'arc') return arcBbox(seg)
   const box = emptyBbox()

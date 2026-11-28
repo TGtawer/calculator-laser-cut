@@ -16,11 +16,11 @@ export const DISCLAIMER = 'Расчёт ориентировочный. Окон
 
 export const ON_REQUEST = 'по запросу'
 
-export const INCOMPLETE_NOTE = 'Итог неполный: часть позиций — по запросу. Их стоимость сообщит менеджер.'
+export const INCOMPLETE_NOTE = 'Итог неполный: часть позиций - по запросу. Их стоимость сообщит менеджер.'
 
 /** Предупреждение, если полный итог ниже минимальной суммы заказа (Q-8). */
 export const minimumOrderMessage = (minimumKopecks: Kopecks): string =>
-  `Сумма заказа ниже минимальной — ${formatRubWhole(minimumKopecks)}. Менеджер уточнит условия.`
+  `Сумма заказа ниже минимальной - ${formatRubWhole(minimumKopecks)}. Менеджер уточнит условия.`
 
 const BENDS = ['гиб', 'гиба', 'гибов'] as const
 
@@ -40,6 +40,28 @@ const kg = (n: number): string => `${formatDecimal(n, 2)} кг`
 
 /** Толщина листа: «3 мм», «0,5 мм». */
 export const thicknessText = (t: number): string => `${formatDecimal(t, 2)} мм`
+
+const blankAreaFormat = new Intl.NumberFormat('ru-RU', { minimumFractionDigits: 3, maximumFractionDigits: 3 })
+export const blankAreaText = (areaM2: number): string => `${blankAreaFormat.format(areaM2)} м²`
+
+/** Площадь одного изделия и всего тиража для экрана и копируемого расчёта. */
+export function blankAreaLines({ blankAreaM2, quantity }: Pick<Quote, 'blankAreaM2' | 'quantity'>) {
+  const lines = [
+    {
+      label: 'Площадь заготовки на изделие',
+      detail: 'По габариту с учётом технологического отступа',
+      value: blankAreaText(blankAreaM2),
+    },
+  ]
+  if (quantity > 1) {
+    lines.push({
+      label: 'Площадь заготовок на весь заказ',
+      detail: 'Площадь на изделие × количество',
+      value: blankAreaText(blankAreaM2 * quantity),
+    })
+  }
+  return lines
+}
 
 function line(
   label: string,
@@ -64,14 +86,14 @@ export function quoteLines(quote: Quote, bendingTariffs: BendingTariffs): QuoteL
       mm(cutting.cutLengthMm),
       cutting.cutRateKopecks === null ? null : `${formatRub(cutting.cutRateKopecks)}/м`,
       cutting.cutPerPartKopecks,
-      `Цена резки листа ${thickness} — по запросу`,
+      `Цена резки листа ${thickness} - по запросу`,
     ),
     line(
       'Прожиги',
       String(cutting.pierces),
       cutting.pierceRateKopecks === null ? null : formatRub(cutting.pierceRateKopecks),
       cutting.piercePerPartKopecks,
-      `Цена прожига для листа ${thickness} — по запросу`,
+      `Цена прожига для листа ${thickness} - по запросу`,
     ),
   ]
   if (bending) {
@@ -86,10 +108,19 @@ export function quoteLines(quote: Quote, bendingTariffs: BendingTariffs): QuoteL
     if (!item.onRequest && bending.band && bending.range && bending.bracket) {
       const total = `${bending.totalBends} ${plural(bending.totalBends, BENDS)}`
       item.note =
-        `Толщина «${bending.band.label}», длина гиба ${mm(bending.bendLengthMm)} — «${bending.range.label}», ` +
-        `тираж ${total} на заказ — «${bending.bracket.label}»`
+        `Толщина «${bending.band.label}», длина гиба ${mm(bending.bendLengthMm)} - «${bending.range.label}», ` +
+        `тираж ${total} на заказ - «${bending.bracket.label}»`
     }
     lines.push(item)
+  }
+  if (quote.material.workSurchargePercent > 0) {
+    lines.push({
+      label: 'Надбавка за работы',
+      detail: `${quote.material.workSurchargePercent} % от рассчитанных работ`,
+      amount: formatRub(quote.workSurchargeKopecks),
+      onRequest: false,
+      note: null,
+    })
   }
   if (metal) {
     const dims = `${formatDecimal(metal.sheetWidthMm, 1)} × ${mm(metal.sheetHeightMm)}`
@@ -99,7 +130,7 @@ export function quoteLines(quote: Quote, bendingTariffs: BendingTariffs): QuoteL
       kg(metal.massKg),
       metal.rateKopecksPerTonne === null ? null : `${formatRub(metal.rateKopecksPerTonne)}/т`,
       metal.perPartKopecks,
-      `Цена металла для листа ${thickness} — по запросу (${sheet.toLowerCase()})`,
+      `Цена металла для листа ${thickness} - по запросу (${sheet.toLowerCase()})`,
       'по',
     )
     if (!item.onRequest) {
@@ -126,11 +157,12 @@ export function quoteText({ quote, bendingTariffs, fileName, analysis }: QuoteTe
     `Материал: ${quote.material.name}, ${thicknessText(cutting.thicknessMm)}`,
     `Количество: ${quantity} шт.`,
     `Габарит детали: ${formatDecimal(analysis.bbox.width, 1)} × ${mm(analysis.bbox.height)}`,
+    ...blankAreaLines(quote).map(({ label, value }) => `${label}: ${value}`),
     `Длина реза детали: ${mm(cutting.cutLengthMm)}, прожигов: ${cutting.pierces}`,
     '',
   ]
   for (const item of quoteLines(quote, bendingTariffs)) {
-    out.push(item.onRequest ? `${item.label}: ${item.detail} — ${ON_REQUEST}` : `${item.label}: ${item.detail} = ${item.amount}`)
+    out.push(item.onRequest ? `${item.label}: ${item.detail} - ${ON_REQUEST}` : `${item.label}: ${item.detail} = ${item.amount}`)
     if (item.note) out.push(`  ${item.note}`)
   }
   if (quote.customerMetal) out.push('Металл: заказчика')
@@ -142,7 +174,7 @@ export function quoteText({ quote, bendingTariffs, fileName, analysis }: QuoteTe
   if (!quote.complete) out.push(INCOMPLETE_NOTE)
   if (analysis.warnings.length > 0) {
     out.push('', 'Замечания к чертежу:')
-    for (const code of analysis.warnings) out.push(`— ${warningMessage(code, analysis.duplicatesRemoved)}`)
+    for (const code of analysis.warnings) out.push(`- ${warningMessage(code, analysis.duplicatesRemoved)}`)
   }
   out.push('', DISCLAIMER)
   return out.join('\n')

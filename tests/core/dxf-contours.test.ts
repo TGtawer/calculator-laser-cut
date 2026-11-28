@@ -19,30 +19,30 @@ const counts = (a: DxfAnalysis) => ({
 })
 
 describe('склейка в контуры (ТЗ 3.4)', () => {
-  it('отрезки в произвольном порядке и направлении — один замкнутый контур', () => {
+  it('отрезки в произвольном порядке и направлении - один замкнутый контур', () => {
     const a = analyze([line(10, 0, 10, 5), line(0, 5, 0, 0), line(0, 0, 10, 0), line(0, 5, 10, 5)])
     expect(counts(a)).toEqual({ closed: 1, open: 0, pierces: 1, outer: 1 })
     expect(a.cutLengthMm).toBeCloseTo(30, 9)
   })
 
-  it('зазор меньше допуска 0,01 мм — контур замкнут', () => {
+  it('зазор меньше допуска 0,01 мм - контур замкнут', () => {
     const a = analyze([line(0, 0, 10, 0), line(10.005, 0, 10, 5), line(10, 5, 0, 5), line(0, 5, 0, 0.004)])
     expect(counts(a)).toEqual({ closed: 1, open: 0, pierces: 1, outer: 1 })
     expect(a.warnings).toEqual([])
   })
 
-  it('зазор больше допуска — незамкнутый контур, 1 прожиг и OPEN_CONTOUR', () => {
+  it('зазор больше допуска - незамкнутый контур, 1 прожиг и OPEN_CONTOUR', () => {
     const a = analyze([line(0, 0, 10, 0), line(10.02, 0, 10, 5), line(10, 5, 0, 5), line(0, 5, 0, 0)])
     expect(counts(a)).toEqual({ closed: 0, open: 1, pierces: 1, outer: 1 })
     expect(a.warnings).toEqual(['OPEN_CONTOUR'])
   })
 
-  it('полилиния без флага замкнутости, но с последней вершиной в первой — замкнута', () => {
+  it('полилиния без флага замкнутости, но с последней вершиной в первой - замкнута', () => {
     const a = analyze([lwpolyline([[0, 0], [10, 0], [10, 10], [0, 10], [0, 0]], false)])
     expect(counts(a)).toEqual({ closed: 1, open: 0, pierces: 1, outer: 1 })
   })
 
-  it('паз из отрезков и дуг — один замкнутый контур', () => {
+  it('паз из отрезков и дуг - один замкнутый контур', () => {
     const a = analyze([line(0, 0, 100, 0), arc(100, 20, 20, -90, 90), line(100, 40, 0, 40), arc(0, 20, 20, 90, 270)])
     expect(counts(a)).toEqual({ closed: 1, open: 0, pierces: 1, outer: 1 })
     expect(a.cutLengthMm).toBeCloseTo(200 + 40 * Math.PI, 9)
@@ -60,7 +60,7 @@ describe('склейка в контуры (ТЗ 3.4)', () => {
     expect(a.openContours).toBeGreaterThanOrEqual(2)
   })
 
-  it('точки превью: у замкнутого контура последняя точка не повторяет первую, длина — точная', () => {
+  it('точки превью: у замкнутого контура последняя точка не повторяет первую, длина - точная', () => {
     const a = analyze([circle(0, 0, 10)])
     const [c] = a.contours
     const first = c!.points[0]!
@@ -93,13 +93,13 @@ describe('дубли (ТЗ 3.4)', () => {
     expect(a.openContours).toBe(1)
   })
 
-  it('частично перекрывающиеся объекты — не дубли', () => {
+  it('частично перекрывающиеся объекты - не дубли', () => {
     const a = analyze([line(0, 0, 10, 0), line(0, 0, 5, 0), circle(0, 0, 5), circle(0, 0, 5.001)])
     expect(a.duplicatesRemoved).toBe(0)
     expect(a.warnings).not.toContain('DUPLICATES_REMOVED')
   })
 
-  it('общие концы при разной форме — не дубли (быстрый хеш совпал, полный ключ — нет)', () => {
+  it('общие концы при разной форме - не дубли (быстрый хеш совпал, полный ключ - нет)', () => {
     // Отрезок и две дуги между одними и теми же точками: выпуклые в разные стороны.
     const a = analyze([line(-10, 0, 10, 0), arc(0, 0, 10, 0, 180), arc(0, 0, 10, 180, 0)])
     expect(a.duplicatesRemoved).toBe(0)
@@ -113,7 +113,7 @@ describe('дубли (ТЗ 3.4)', () => {
   })
 })
 
-describe('вложенность и MULTIPLE_PARTS (ТЗ 3.4)', () => {
+describe('вложенность контуров (ТЗ 3.4)', () => {
   it('пластина с отверстиями: один внешний контур, отверстия внутренние', () => {
     const a = analyze([...rectLines(0, 0, 100, 50), circle(25, 25, 5), lwpolyline([[60, 20], [80, 20], [80, 30], [60, 30]], true)])
     expect(counts(a)).toEqual({ closed: 3, open: 0, pierces: 3, outer: 1 })
@@ -121,19 +121,20 @@ describe('вложенность и MULTIPLE_PARTS (ТЗ 3.4)', () => {
     expect(a.warnings).toEqual([])
   })
 
-  it('две отдельные детали — MULTIPLE_PARTS', () => {
+  it('две отдельные детали дают два внешних контура без предупреждения', () => {
     const a = analyze([...rectLines(0, 0, 10, 10), ...rectLines(20, 0, 10, 10)])
     expect(a.outerContours).toBe(2)
-    expect(a.warnings).toEqual(['MULTIPLE_PARTS'])
+    expect(a.pierces).toBe(2)
+    expect(a.cutLengthMm).toBe(80)
+    expect(a.warnings).toEqual([])
   })
 
-  it('деталь внутри отверстия другой детали — вложенный контур, не внешний', () => {
+  it('деталь внутри отверстия другой детали - вложенный контур, не внешний', () => {
     const a = analyze([...rectLines(0, 0, 100, 100), ...rectLines(20, 20, 60, 60), circle(50, 50, 10)])
     expect(a.outerContours).toBe(1)
-    expect(a.warnings).not.toContain('MULTIPLE_PARTS')
   })
 
-  it('незамкнутый контур внутри детали — внутренний', () => {
+  it('незамкнутый контур внутри детали - внутренний', () => {
     const a = analyze([circle(0, 0, 50), line(-10, 0, 10, 0)])
     expect(counts(a)).toEqual({ closed: 1, open: 1, pierces: 2, outer: 1 })
     expect(a.warnings).toEqual(['OPEN_CONTOUR'])
@@ -181,7 +182,7 @@ describe('слои (ТЗ 3.3)', () => {
     expect(cutOnly.warnings).toEqual([])
   })
 
-  it('все слои отключены — пустой результат без ложных предупреждений', () => {
+  it('все слои отключены - пустой результат без ложных предупреждений', () => {
     const a = analyze(entities, { disabledLayers: ['CUT', 'MARK'] })
     expect(counts(a)).toEqual({ closed: 0, open: 0, pierces: 0, outer: 0 })
     expect(a.cutLengthMm).toBe(0)
@@ -192,12 +193,11 @@ describe('слои (ТЗ 3.3)', () => {
 
 describe('тексты предупреждений', () => {
   it('тексты из ТЗ', () => {
-    expect(warningMessage('OPEN_CONTOUR')).toBe('В чертеже есть незамкнутые контуры — проверьте файл')
-    expect(warningMessage('MULTIPLE_PARTS')).toBe('В файле, похоже, несколько деталей — расчёт идёт как за одну')
+    expect(warningMessage('OPEN_CONTOUR')).toBe('В чертеже есть незамкнутые контуры - проверьте файл')
     expect(warningMessage('SUSPICIOUS_SIZE')).toBe('Проверьте единицы чертежа')
   })
 
-  it('DUPLICATES_REMOVED — с количеством', () => {
+  it('DUPLICATES_REMOVED - с количеством', () => {
     expect(warningMessage('DUPLICATES_REMOVED', 3)).toContain('3')
   })
 })

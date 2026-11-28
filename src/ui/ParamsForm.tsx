@@ -1,10 +1,10 @@
-import { type ReactNode, useId } from 'react'
+import { type ChangeEvent, type KeyboardEvent, type ReactNode, useId } from 'react'
 import { formatDecimal } from '../core/format.ts'
 import { cuttingThicknesses, findCuttingRow } from '../core/pricing/cutting.ts'
 import { KG_PER_TONNE } from '../core/pricing/metal.ts'
 import { thicknessText } from '../core/pricing/summary.ts'
-import type { Tariffs } from '../core/pricing/tariffs.ts'
-import type { FieldName, FormValues } from './params.ts'
+import { type Tariffs, materialOptions } from '../core/pricing/tariffs.ts'
+import { type FieldName, type FormValues, formatNumberInput } from './params.ts'
 
 type Props = {
   tariffs: Tariffs
@@ -18,6 +18,18 @@ type FieldProps = {
   hint?: string
   error?: string | undefined
   children: (props: { id: string; 'aria-invalid': boolean; 'aria-describedby': string | undefined }) => ReactNode
+}
+
+/** При удалении рядом с разделителем удаляем соседнюю цифру. */
+function skipGroupSpace(event: KeyboardEvent<HTMLInputElement>): void {
+  const { key, currentTarget: input } = event
+  if ((key !== 'Backspace' && key !== 'Delete') || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return
+  const caret = input.selectionStart
+  if (caret === null || caret !== input.selectionEnd) return
+  const separator = key === 'Backspace' ? caret - 1 : caret
+  if (!/^\d \d$/.test(input.value.slice(separator - 1, separator + 2))) return
+  const next = key === 'Backspace' ? caret - 1 : caret + 1
+  input.setSelectionRange(next, next)
 }
 
 /** Поле формы: подпись, элемент ввода, подсказка или ошибка. */
@@ -40,15 +52,34 @@ function Field({ label, hint, error, children }: FieldProps) {
   )
 }
 
-/** Параметры заказа (ТЗ 2, п. 4). Толщина — только из тарифов, свободного ввода нет. */
+/** Параметры заказа (ТЗ 2, п. 4). Толщина - только из тарифов, свободного ввода нет. */
 export function ParamsForm({ tariffs, value, errors, onChange }: Props) {
   const metalGroupId = useId()
   const set = <K extends keyof FormValues>(key: K, v: FormValues[K]) => onChange({ ...value, [key]: v })
-  const material = tariffs.materials.find((m) => m.id === value.materialId)
+  const numberInputProps = (key: Exclude<FieldName, 'thickness'>) => ({
+    autoComplete: 'off',
+    value: value[key],
+    onChange: ({ currentTarget: input }: ChangeEvent<HTMLInputElement>) => {
+      const formatted = formatNumberInput(input.value, input.selectionStart ?? input.value.length)
+      if (formatted.value !== input.value) {
+        input.value = formatted.value
+        input.setSelectionRange(formatted.caret, formatted.caret)
+      }
+      set(key, formatted.value)
+    },
+    onKeyDown: skipGroupSpace,
+  })
+  const options = materialOptions(tariffs)
+  const material = options.find((option) => option.id === value.materialId)
   const thicknesses = material ? cuttingThicknesses(material) : []
   const selectedThickness = value.thickness === '' ? null : Number(value.thickness)
   const selectedRow = material && selectedThickness !== null ? findCuttingRow(material, selectedThickness) : undefined
   const tariffMetalPrice = selectedRow?.metal == null ? null : formatDecimal(selectedRow.metal * KG_PER_TONNE, 2)
+  const selectMaterial = (materialId: string) => {
+    const next = options.find((option) => option.id === materialId)
+    const thickness = next && selectedThickness !== null && findCuttingRow(next, selectedThickness) ? value.thickness : ''
+    onChange({ ...value, materialId, thickness })
+  }
 
   return (
     <form className="params" onSubmit={(e) => e.preventDefault()} noValidate>
@@ -58,9 +89,9 @@ export function ParamsForm({ tariffs, value, errors, onChange }: Props) {
             {...props}
             className="input"
             value={value.materialId}
-            onChange={(e) => onChange({ ...value, materialId: e.currentTarget.value, thickness: '' })}
+            onChange={(e) => selectMaterial(e.currentTarget.value)}
           >
-            {tariffs.materials.map((m) => (
+            {options.map((m) => (
               <option key={m.id} value={m.id}>
                 {m.name}
               </option>
@@ -96,9 +127,7 @@ export function ParamsForm({ tariffs, value, errors, onChange }: Props) {
               {...props}
               className="input"
               inputMode="numeric"
-              autoComplete="off"
-              value={value.quantity}
-              onChange={(e) => set('quantity', e.currentTarget.value)}
+              {...numberInputProps('quantity')}
             />
           )}
         </Field>
@@ -136,7 +165,7 @@ export function ParamsForm({ tariffs, value, errors, onChange }: Props) {
               hint={
                 tariffMetalPrice !== null
                   ? `По умолчанию из прайса (${tariffMetalPrice} ₽/т), можно указать свою`
-                  : 'Если оставить пустым — «по запросу»'
+                  : 'Если оставить пустым - «по запросу»'
               }
               error={errors.metalPrice}
             >
@@ -145,10 +174,8 @@ export function ParamsForm({ tariffs, value, errors, onChange }: Props) {
                   {...props}
                   className="input"
                   inputMode="decimal"
-                  autoComplete="off"
-                  placeholder={tariffMetalPrice ?? 'например, 120 000'}
-                  value={value.metalPrice}
-                  onChange={(e) => set('metalPrice', e.currentTarget.value)}
+                  placeholder={tariffMetalPrice ?? 'Например, от 120 000 ₽/т'}
+                  {...numberInputProps('metalPrice')}
                 />
               )}
             </Field>
@@ -173,9 +200,7 @@ export function ParamsForm({ tariffs, value, errors, onChange }: Props) {
                 {...props}
                 className="input"
                 inputMode="numeric"
-                autoComplete="off"
-                value={value.bendsPerPart}
-                onChange={(e) => set('bendsPerPart', e.currentTarget.value)}
+                {...numberInputProps('bendsPerPart')}
               />
             )}
           </Field>
@@ -186,10 +211,8 @@ export function ParamsForm({ tariffs, value, errors, onChange }: Props) {
                 {...props}
                 className="input"
                 inputMode="decimal"
-                autoComplete="off"
                 placeholder="например, 500"
-                value={value.bendLength}
-                onChange={(e) => set('bendLength', e.currentTarget.value)}
+                {...numberInputProps('bendLength')}
               />
             )}
           </Field>

@@ -94,7 +94,7 @@ function makeContour(pieces: readonly Piece[], closed: boolean, tolerance: numbe
   for (const { shape, reversed } of pieces) {
     const part = sampleShape(shape)
     if (reversed) part.reverse()
-    // Стык соседних объектов совпадает с точностью до допуска — точку не дублируем.
+    // Стык соседних объектов совпадает с точностью до допуска - точку не дублируем.
     points.push(...(points.length > 0 ? part.slice(1) : part))
     mergeBbox(bbox, shapeBbox(shape))
     lengthMm += shapeLength(shape)
@@ -105,7 +105,7 @@ function makeContour(pieces: readonly Piece[], closed: boolean, tolerance: numbe
 
 /**
  * Собирает контуры (ТЗ 3.4). Окружность, замкнутая полилиния, полный эллипс и замкнутый
- * сплайн — каждый отдельный замкнутый контур. Остальные объекты склеиваются в цепочки
+ * сплайн - каждый отдельный замкнутый контур. Остальные объекты склеиваются в цепочки
  * по совпадению концов с допуском tolerance; цепочка, вернувшаяся в начало, замкнута.
  */
 export function buildContours(shapes: readonly Shape[], tolerance: number = DXF_CONFIG.joinToleranceMm): ContourDraft[] {
@@ -116,7 +116,7 @@ export function buildContours(shapes: readonly Shape[], tolerance: number = DXF_
     else open.push(shape)
   }
 
-  // Узлы — концы объектов, совпадающие с точностью до допуска. Поиск соседей через сетку
+  // Узлы - концы объектов, совпадающие с точностью до допуска. Поиск соседей через сетку
   // с ячейкой в допуск. Ячейки адресуются числовым хешем: при коллизии в корзину попадут
   // узлы чужой ячейки, но расстояние всё равно проверяется.
   const nodes: { p: Point; edges: number[] }[] = []
@@ -160,7 +160,7 @@ export function buildContours(shapes: readonly Shape[], tolerance: number = DXF_
       const edge = nodes[node]!.edges.find((i) => !used[i])
       if (edge === undefined) break
       used[edge] = true
-      // Вошли в объект с конца — проходим его в обратную сторону.
+      // Вошли в объект с конца - проходим его в обратную сторону.
       const reversed = startNode[edge] !== node
       pieces.push({ shape: open[edge]!, reversed })
       node = reversed ? startNode[edge]! : endNode[edge]!
@@ -191,7 +191,7 @@ function polygonArea(points: readonly Point[]): number {
   return Math.abs(sum) / 2
 }
 
-/** Точка внутри многоугольника — метод луча. */
+/** Точка внутри многоугольника - метод луча. */
 function pointInPolygon(p: Point, polygon: readonly Point[]): boolean {
   let inside = false
   for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
@@ -211,12 +211,12 @@ const bboxInside = (inner: Bbox, outer: Bbox): boolean =>
 /**
  * Глубина вложенности каждого контура: сколько замкнутых контуров его содержат (ТЗ 3.4).
  * A внутри B, если bbox A лежит внутри bbox B и точка A внутри многоугольника B.
- * Проверяются три точки A и берётся большинство — на случай, если одна легла на границу B.
+ * Проверяются три точки A и берётся большинство - на случай, если одна легла на границу B.
  * B должен быть больше A по площади, иначе два совпадающих контура «содержали» бы друг друга.
  *
  * Чтобы не сравнивать каждый контур со всеми (на тысячах отверстий это секунды),
  * замкнутые контуры раскладываются по сетке: B, содержащий A, обязательно содержит
- * центр габарита A, поэтому кандидаты — только контуры из ячейки этого центра.
+ * центр габарита A, поэтому кандидаты - только контуры из ячейки этого центра.
  */
 export function nestingDepths(contours: readonly ContourDraft[]): number[] {
   const areas = contours.map((c) => (c.closed ? polygonArea(c.points) : 0))

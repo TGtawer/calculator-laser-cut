@@ -25,7 +25,7 @@ import { CircleHandler, EllipseHandler, SplineHandler } from './handlers.ts'
 import { dxfError } from './messages.ts'
 import { isValidSpline } from './spline.ts'
 
-/** Перевод единиц чертежа в мм по $INSUNITS (ТЗ 3.2). 0 или отсутствие — мм с предупреждением. */
+/** Перевод единиц чертежа в мм по $INSUNITS (ТЗ 3.2). 0 или отсутствие - мм с предупреждением. */
 const INSUNITS_TO_MM: Readonly<Record<number, number>> = { 1: 25.4, 4: 1, 5: 10, 6: 1000 }
 
 export type ParsedDrawing = {
@@ -33,7 +33,7 @@ export type ParsedDrawing = {
   shapes: Shape[]
   /** Слои с геометрией в порядке появления в файле. */
   layers: string[]
-  /** $INSUNITS не задан — размеры считаются в мм (UNITS_ASSUMED_MM). */
+  /** $INSUNITS не задан - размеры считаются в мм (UNITS_ASSUMED_MM). */
   unitsAssumed: boolean
 }
 
@@ -49,7 +49,7 @@ export function checkDxfFile(file: { name: string; size: number }): DxfError | n
 /** Разбор текста DXF в геометрию в мм. */
 export function parseDxf(text: string): ParseResult {
   const source = text.charCodeAt(0) === 0xfeff ? text.slice(1) : text
-  // Бинарный DXF начинается с сигнатуры, DWG — с версии формата (AC1015 и т.п.).
+  // Бинарный DXF начинается с сигнатуры, DWG - с версии формата (AC1015 и т.п.).
   const head = source.slice(0, 32)
   if (head.startsWith('AutoCAD Binary DXF') || /^AC1\d{3}/.test(head)) {
     return { ok: false, error: dxfError('UNSUPPORTED_FORMAT') }
@@ -149,8 +149,8 @@ class ShapeCollector {
   }
 
   /**
-   * Добавляет геометрию объекта. m — преобразование в мм мировых координат,
-   * parentLayer — слой вставки блока: объекты блока на слое «0» наследуют его.
+   * Добавляет геометрию объекта. m - преобразование в мм мировых координат,
+   * parentLayer - слой вставки блока: объекты блока на слое «0» наследуют его.
    */
   collect(e: Rec, m: Affine, parentLayer: string | undefined, depth: number, stack: string[]): void {
     const ownLayer = typeof e['layer'] === 'string' && e['layer'] !== '' ? e['layer'] : '0'
@@ -209,7 +209,7 @@ class ShapeCollector {
         const ratio = num(e['axisRatio'], 1)
         const normal = normalize3(normalOf(e, 'extrusion'))
         if (!c || !major || Math.hypot(major.x, major.y) < EPS || !(ratio > 0) || !normal) return
-        // Центр и большая полуось — в мировых координатах; малая полуось = (N × большая) · ratio.
+        // Центр и большая полуось - в мировых координатах; малая полуось = (N × большая) · ratio.
         const start = num(e['startParam'])
         const sweep = normalizeSweep(start, num(e['endParam'], TAU))
         const minor = crossXY(normal, major)
@@ -232,7 +232,7 @@ class ShapeCollector {
           add([{ kind: 'spline', degree, controlPoints: control, knots, weights: rational ? weights : null }], closed)
           return
         }
-        // Нет корректных узлов: ломаная по точкам на кривой (ТЗ 3.3), а если их нет — по контрольным.
+        // Нет корректных узлов: ломаная по точкам на кривой (ТЗ 3.3), а если их нет - по контрольным.
         const points = fit.length >= 2 ? fit : control
         if (points.length < 2) return
         if (closed && distance(points[0]!, points[points.length - 1]!) >= EPS) points.push(points[0]!)
@@ -248,7 +248,7 @@ class ShapeCollector {
     }
   }
 
-  /** Разворот блока: смещение, масштаб, поворот, массив MINSERT; вложенные блоки — рекурсивно. */
+  /** Разворот блока: смещение, масштаб, поворот, массив MINSERT; вложенные блоки - рекурсивно. */
   private collectInsert(e: Rec, m: Affine, layer: string, depth: number, stack: string[]): void {
     const name = typeof e['name'] === 'string' ? e['name'] : ''
     const block = asRecord(this.blocks[name])
