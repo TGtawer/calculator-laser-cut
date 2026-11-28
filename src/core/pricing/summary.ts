@@ -69,7 +69,7 @@ export function blankAreaLines({ blankAreaM2, quantity }: Pick<Quote, 'blankArea
 export function sheetLayoutLine(layout: Quote['sheetLayout']) {
   if (!layout) return null
   const { widthMm, heightMm, partsPerSheet, sheetsRequired } = layout
-  const sheet = `Лист ${formatDecimal(widthMm, 1)} × ${mm(heightMm)}`
+  const sheet = `Лист ${formatDecimal(widthMm, 20)} × ${formatDecimal(heightMm, 20)} мм`
   const label = 'Раскладка по габаритам'
   if (sheetsRequired === null) {
     return { label, detail: sheet, value: 'Требуется проверка раскладки', needsReview: true }

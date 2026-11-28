@@ -1,4 +1,4 @@
-import { type ChangeEvent, type KeyboardEvent, type ReactNode, useId } from 'react'
+import { type ChangeEvent, type KeyboardEvent, type ReactNode, useId, useState } from 'react'
 import { formatDecimal } from '../core/format.ts'
 import { cuttingThicknesses, findCuttingRow } from '../core/pricing/cutting.ts'
 import { KG_PER_TONNE } from '../core/pricing/metal.ts'
@@ -55,6 +55,8 @@ function Field({ label, hint, error, children }: FieldProps) {
 /** Параметры заказа (ТЗ 2, п. 4). Толщина - только из тарифов, свободного ввода нет. */
 export function ParamsForm({ tariffs, value, errors, onChange }: Props) {
   const metalGroupId = useId()
+  const sheetFieldsId = useId()
+  const [sheetOpen, setSheetOpen] = useState(false)
   const set = <K extends keyof FormValues>(key: K, v: FormValues[K]) => onChange({ ...value, [key]: v })
   const numberInputProps = (key: Exclude<FieldName, 'thickness'>) => ({
     autoComplete: 'off',
@@ -180,6 +182,31 @@ export function ParamsForm({ tariffs, value, errors, onChange }: Props) {
               )}
             </Field>
           )}
+        </div>
+      )}
+
+      {tariffs.order.sheetLayout && (
+        <div className="sheet-size">
+          <div className="sheet-size__row">
+            <div>
+              <span className="sheet-size__label">Габариты листа</span>
+              <span>{errors.sheetWidth || errors.sheetLength ? 'Укажите размеры' : `${value.sheetWidth} × ${value.sheetLength} мм`}</span>
+            </div>
+            <button type="button" className="sheet-size__toggle" aria-expanded={sheetOpen}
+              aria-controls={sheetFieldsId} onClick={() => setSheetOpen(!sheetOpen)}>
+              {sheetOpen ? 'Свернуть' : 'Изменить габариты'}
+            </button>
+          </div>
+          <div id={sheetFieldsId} hidden={!sheetOpen}>
+            <div className="params__row">
+              <Field label="Ширина, мм" error={errors.sheetWidth}>
+                {(props) => <input {...props} className="input" inputMode="decimal" {...numberInputProps('sheetWidth')} />}
+              </Field>
+              <Field label="Длина, мм" error={errors.sheetLength}>
+                {(props) => <input {...props} className="input" inputMode="decimal" {...numberInputProps('sheetLength')} />}
+              </Field>
+            </div>
+          </div>
         </div>
       )}
 

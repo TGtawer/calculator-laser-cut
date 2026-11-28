@@ -1,3 +1,4 @@
+import { formatDecimal } from '../core/format.ts'
 import { findCuttingRow } from '../core/pricing/cutting.ts'
 import { KG_PER_TONNE } from '../core/pricing/metal.ts'
 import type { QuoteInput } from '../core/pricing/quote.ts'
@@ -13,12 +14,14 @@ export type FormValues = {
   customerMetal: boolean
   /** Цена металла, ₽/т; '' - взять из тарифов (или «по запросу», если в тарифах null). */
   metalPrice: string
+  sheetWidth: string
+  sheetLength: string
   bendingEnabled: boolean
   bendsPerPart: string
   bendLength: string
 }
 
-export type FieldName = 'thickness' | 'quantity' | 'metalPrice' | 'bendsPerPart' | 'bendLength'
+export type FieldName = 'thickness' | 'quantity' | 'metalPrice' | 'sheetWidth' | 'sheetLength' | 'bendsPerPart' | 'bendLength'
 
 export type FormCheck = {
   /** Параметры расчёта без данных чертежа; null - форма заполнена не до конца. */
@@ -35,6 +38,8 @@ export const initialForm = (tariffs: Tariffs): FormValues => ({
   quantity: '1',
   customerMetal: false,
   metalPrice: '',
+  sheetWidth: tariffs.order.sheetLayout ? formatDecimal(tariffs.order.sheetLayout.widthMm, 20) : '',
+  sheetLength: tariffs.order.sheetLayout ? formatDecimal(tariffs.order.sheetLayout.heightMm, 20) : '',
   bendingEnabled: false,
   bendsPerPart: '1',
   bendLength: '',
@@ -139,11 +144,20 @@ export function checkForm(form: FormValues, tariffs: Tariffs): FormCheck {
     else bendingOk = false
   }
 
+  let sheetSize: QuoteInput['sheetSize']
+  if (tariffs.order.sheetLayout) {
+    const widthMm = parsePositive(form.sheetWidth)
+    const heightMm = parsePositive(form.sheetLength)
+    if (widthMm === null) errors.sheetWidth = 'Введите ширину больше нуля'
+    if (heightMm === null) errors.sheetLength = 'Введите длину больше нуля'
+    sheetSize = widthMm !== null && heightMm !== null ? { widthMm, heightMm } : null
+  }
+
   if (!material || thickness === null || errors.thickness || quantity === null || !metalPriceOk || !bendingOk) {
     return { input: null, errors, missing }
   }
   return {
-    input: { materialId: material.id, thicknessMm: thickness, quantity, customerMetal, metalPriceRubPerKg, bending },
+    input: { materialId: material.id, thicknessMm: thickness, quantity, customerMetal, metalPriceRubPerKg, bending, sheetSize },
     errors,
     missing,
   }

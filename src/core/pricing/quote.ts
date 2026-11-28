@@ -17,6 +17,8 @@ export type QuoteInput = {
   pierces: number
   /** Габарит детали, мм (из разбора DXF). Используется для расчёта стоимости металла. */
   bbox: PartBbox
+  /** Размер листа заказа. По умолчанию берётся из тарифов, null временно отключает оценку раскладки. */
+  sheetSize?: Pick<SheetLayout, 'widthMm' | 'heightMm'> | null | undefined
   /** Металл заказчика: стоимость металла не рассчитывается и в итог не входит. */
   customerMetal: boolean
   /**
@@ -103,8 +105,8 @@ export function calculateQuote(tariffs: Tariffs, input: QuoteInput): Quote {
       : null
 
   const blankAreaM2 = (metal ?? blankSize(input.bbox, tariffs.order.marginMm)).areaM2
-  const sheetLayout = tariffs.order.sheetLayout
-    ? calculateSheetLayout(input.bbox, quantity, tariffs.order.sheetLayout)
+  const sheetLayout = tariffs.order.sheetLayout && input.sheetSize !== null
+    ? calculateSheetLayout(input.bbox, quantity, { ...tariffs.order.sheetLayout, ...input.sheetSize })
     : null
   const workItems = [cutting.cutPerPartKopecks, cutting.piercePerPartKopecks]
   if (bending) workItems.push(bending.perPartKopecks)
