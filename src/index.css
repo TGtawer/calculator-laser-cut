@@ -510,18 +510,23 @@ ul.alert {
   gap: 12px;
 }
 
-.metal-section,
-.sheet-size {
+.params__sheet-row {
   display: grid;
-  gap: 12px;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  column-gap: 12px;
 }
 
-.sheet-size__row {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 4px 12px;
+.params__sheet-row > .field {
+  display: grid;
+  grid-row: span 3;
+  grid-template-rows: subgrid;
+  align-items: end;
+}
+
+.params__sheet-row .field__hint,
+.params__sheet-row .field__error {
+  align-self: start;
 }
 
 .segmented {

@@ -1,4 +1,4 @@
-import { type ChangeEvent, type KeyboardEvent, type ReactNode, useId, useState } from 'react'
+import { type ChangeEvent, type KeyboardEvent, type ReactNode, useId } from 'react'
 import { formatDecimal } from '../core/format.ts'
 import { cuttingThicknesses, findCuttingRow } from '../core/pricing/cutting.ts'
 import { KG_PER_TONNE } from '../core/pricing/metal.ts'
@@ -55,8 +55,7 @@ function Field({ label, hint, error, children }: FieldProps) {
 /** Параметры заказа (ТЗ 2, п. 4). Толщина - только из тарифов, свободного ввода нет. */
 export function ParamsForm({ tariffs, value, errors, onChange }: Props) {
   const metalGroupId = useId()
-  const sheetFieldsId = useId()
-  const [sheetOpen, setSheetOpen] = useState(false)
+  const showMetalPrice = tariffs.order.includeMaterialCost && !value.customerMetal
   const set = <K extends keyof FormValues>(key: K, v: FormValues[K]) => onChange({ ...value, [key]: v })
   const numberInputProps = (key: Exclude<FieldName, 'thickness'>) => ({
     autoComplete: 'off',
@@ -135,63 +134,35 @@ export function ParamsForm({ tariffs, value, errors, onChange }: Props) {
         </Field>
       </div>
 
-      {tariffs.order.sheetLayout && (
-        <div className="sheet-size">
-          <div className="sheet-size__row">
-            <div>
-              <span className="field__label">Габариты листа</span>
-              <span>{errors.sheetWidth || errors.sheetLength ? 'Укажите размеры' : `${value.sheetWidth} × ${value.sheetLength} мм`}</span>
-            </div>
+      {tariffs.order.includeMaterialCost && (
+        <div className="field" role="group" aria-labelledby={metalGroupId}>
+          <span id={metalGroupId} className="field__label">
+            Металл
+          </span>
+          <div className="segmented">
             <button
               type="button"
-              className="button button--secondary"
-              aria-expanded={sheetOpen}
-              aria-controls={sheetFieldsId}
-              onClick={() => setSheetOpen(!sheetOpen)}
+              className={`segmented__btn${!value.customerMetal ? ' segmented__btn--active' : ''}`}
+              aria-pressed={!value.customerMetal}
+              onClick={() => set('customerMetal', false)}
             >
-              {sheetOpen ? 'Свернуть' : 'Изменить габариты'}
+              Наш металл
             </button>
-          </div>
-          <div id={sheetFieldsId} hidden={!sheetOpen}>
-            <div className="params__row">
-              <Field label="Ширина, мм" error={errors.sheetWidth}>
-                {(props) => <input {...props} className="input" inputMode="decimal" {...numberInputProps('sheetWidth')} />}
-              </Field>
-              <Field label="Длина, мм" error={errors.sheetLength}>
-                {(props) => <input {...props} className="input" inputMode="decimal" {...numberInputProps('sheetLength')} />}
-              </Field>
-            </div>
+            <button
+              type="button"
+              className={`segmented__btn${value.customerMetal ? ' segmented__btn--active' : ''}`}
+              aria-pressed={value.customerMetal}
+              onClick={() => set('customerMetal', true)}
+            >
+              Металл заказчика
+            </button>
           </div>
         </div>
       )}
 
-      {tariffs.order.includeMaterialCost && (
-        <div className="metal-section">
-          <div className="field" role="group" aria-labelledby={metalGroupId}>
-            <span id={metalGroupId} className="field__label">
-              Металл
-            </span>
-            <div className="segmented">
-              <button
-                type="button"
-                className={`segmented__btn${!value.customerMetal ? ' segmented__btn--active' : ''}`}
-                aria-pressed={!value.customerMetal}
-                onClick={() => set('customerMetal', false)}
-              >
-                Наш металл
-              </button>
-              <button
-                type="button"
-                className={`segmented__btn${value.customerMetal ? ' segmented__btn--active' : ''}`}
-                aria-pressed={value.customerMetal}
-                onClick={() => set('customerMetal', true)}
-              >
-                Металл заказчика
-              </button>
-            </div>
-          </div>
-
-          {!value.customerMetal && (
+      {(showMetalPrice || tariffs.order.sheetLayout) && (
+        <div className="params__sheet-row">
+          {showMetalPrice && (
             <Field
               label="Цена металла, ₽/т"
               hint={
@@ -206,11 +177,21 @@ export function ParamsForm({ tariffs, value, errors, onChange }: Props) {
                   {...props}
                   className="input"
                   inputMode="decimal"
-                  placeholder={tariffMetalPrice ?? 'Например, от 120 000 ₽/т'}
+                  placeholder={tariffMetalPrice ?? '120 000'}
                   {...numberInputProps('metalPrice')}
                 />
               )}
             </Field>
+          )}
+          {tariffs.order.sheetLayout && (
+            <>
+              <Field label="Ширина листа, мм" error={errors.sheetWidth}>
+                {(props) => <input {...props} className="input" inputMode="decimal" {...numberInputProps('sheetWidth')} />}
+              </Field>
+              <Field label="Длина листа, мм" error={errors.sheetLength}>
+                {(props) => <input {...props} className="input" inputMode="decimal" {...numberInputProps('sheetLength')} />}
+              </Field>
+            </>
           )}
         </div>
       )}
