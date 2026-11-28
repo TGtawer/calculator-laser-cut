@@ -15,7 +15,7 @@ type Props = {
 
 type FieldProps = {
   label: string
-  hint?: string
+  hint?: string | undefined
   error?: string | undefined
   children: (props: { id: string; 'aria-invalid': boolean; 'aria-describedby': string | undefined }) => ReactNode
 }
@@ -55,6 +55,7 @@ function Field({ label, hint, error, children }: FieldProps) {
 /** Параметры заказа (ТЗ 2, п. 4). Толщина - только из тарифов, свободного ввода нет. */
 export function ParamsForm({ tariffs, value, errors, onChange }: Props) {
   const metalGroupId = useId()
+  const showMetalPrice = tariffs.order.includeMaterialCost && !value.customerMetal
   const set = <K extends keyof FormValues>(key: K, v: FormValues[K]) => onChange({ ...value, [key]: v })
   const numberInputProps = (key: Exclude<FieldName, 'thickness'>) => ({
     autoComplete: 'off',
@@ -134,38 +135,40 @@ export function ParamsForm({ tariffs, value, errors, onChange }: Props) {
       </div>
 
       {tariffs.order.includeMaterialCost && (
-        <div className="metal-section">
-          <div className="field" role="group" aria-labelledby={metalGroupId}>
-            <span id={metalGroupId} className="field__label">
-              Металл
-            </span>
-            <div className="segmented">
-              <button
-                type="button"
-                className={`segmented__btn${!value.customerMetal ? ' segmented__btn--active' : ''}`}
-                aria-pressed={!value.customerMetal}
-                onClick={() => set('customerMetal', false)}
-              >
-                Наш металл
-              </button>
-              <button
-                type="button"
-                className={`segmented__btn${value.customerMetal ? ' segmented__btn--active' : ''}`}
-                aria-pressed={value.customerMetal}
-                onClick={() => set('customerMetal', true)}
-              >
-                Металл заказчика
-              </button>
-            </div>
+        <div className="field" role="group" aria-labelledby={metalGroupId}>
+          <span id={metalGroupId} className="field__label">
+            Металл
+          </span>
+          <div className="segmented">
+            <button
+              type="button"
+              className={`segmented__btn${!value.customerMetal ? ' segmented__btn--active' : ''}`}
+              aria-pressed={!value.customerMetal}
+              onClick={() => set('customerMetal', false)}
+            >
+              Наш металл
+            </button>
+            <button
+              type="button"
+              className={`segmented__btn${value.customerMetal ? ' segmented__btn--active' : ''}`}
+              aria-pressed={value.customerMetal}
+              onClick={() => set('customerMetal', true)}
+            >
+              Металл заказчика
+            </button>
           </div>
+        </div>
+      )}
 
-          {!value.customerMetal && (
+      {(showMetalPrice || tariffs.order.sheetLayout) && (
+        <div className="params__sheet-row">
+          {showMetalPrice && (
             <Field
               label="Цена металла, ₽/т"
               hint={
                 tariffMetalPrice !== null
                   ? `По умолчанию из прайса (${tariffMetalPrice} ₽/т), можно указать свою`
-                  : 'Если оставить пустым – «по запросу»'
+                  : undefined
               }
               error={errors.metalPrice}
             >
@@ -174,11 +177,21 @@ export function ParamsForm({ tariffs, value, errors, onChange }: Props) {
                   {...props}
                   className="input"
                   inputMode="decimal"
-                  placeholder={tariffMetalPrice ?? 'Например, от 120 000 ₽/т'}
+                  placeholder={tariffMetalPrice ?? '120 000'}
                   {...numberInputProps('metalPrice')}
                 />
               )}
             </Field>
+          )}
+          {tariffs.order.sheetLayout && (
+            <>
+              <Field label="Ширина листа, мм" error={errors.sheetWidth}>
+                {(props) => <input {...props} className="input" inputMode="decimal" {...numberInputProps('sheetWidth')} />}
+              </Field>
+              <Field label="Длина листа, мм" error={errors.sheetLength}>
+                {(props) => <input {...props} className="input" inputMode="decimal" {...numberInputProps('sheetLength')} />}
+              </Field>
+            </>
           )}
         </div>
       )}

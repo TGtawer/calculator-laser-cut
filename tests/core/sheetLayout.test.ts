@@ -11,6 +11,13 @@ const sheet: SheetLayoutSettings = {
 }
 
 describe('раскладка по габаритам', () => {
+  it('показывает невозможность раскладки, когда краевые отступы занимают весь лист', () => {
+    const settings = { ...sheet, widthMm: 8, heightMm: 8, partGapMm: 0 }
+    const result = calculateSheetLayout({ width: 1, height: 1 }, 1, settings)
+    expect(result.partsPerSheet).toBe(0)
+    expect(result.sheetsRequired).toBeNull()
+  })
+
   it('считает два листа для двух изделий, даже если по площади хватает одного', () => {
     const layout = calculateSheetLayout({ width: 1300, height: 1600 }, 2, sheet)
     expect(layout.partsPerSheet).toBe(1)

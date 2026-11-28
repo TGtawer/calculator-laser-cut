@@ -66,8 +66,31 @@ describe('проверка формы', () => {
       quantity: 10,
       customerMetal: false,
       metalPriceRubPerKg: null,
+      sheetSize: { widthMm: 1500, heightMm: 3000 },
       bending: null,
     })
+  })
+
+  it.each([true, false])('пересчитывает число листов по своему формату, металл заказчика %s', (customerMetal) => {
+    const drawing = { cutLengthMm: 3200, pierces: 1, bbox: { width: 900, height: 700 } }
+    const values = form({ quantity: '13', metalPrice: '77 100', customerMetal })
+    const quoteFor = (v: FormValues) => calculateQuote(tariffs, { ...checkForm(v, tariffs).input!, ...drawing })
+    const standard = quoteFor(values)
+    const custom = quoteFor({ ...values, sheetWidth: '1 250,5', sheetLength: '2 500' })
+    expect(standard.sheetLayout?.sheetsRequired).toBe(3)
+    expect(custom.sheetLayout).toEqual({ widthMm: 1250.5, heightMm: 2500, partsPerSheet: 3, sheetsRequired: 5 })
+    expect(custom.totalKopecks).toBe(standard.totalKopecks)
+    expect(custom.blankAreaM2).toBe(standard.blankAreaM2)
+  })
+
+  it('при ошибке в размере оставляет доступным расчёт стоимости и скрывает раскладку', () => {
+    const { input, errors } = checkForm(form({ sheetWidth: '', sheetLength: '-4' }), tariffs)
+    expect(errors.sheetWidth).toBeDefined()
+    expect(errors.sheetLength).toBeDefined()
+    expect(input?.sheetSize).toBeNull()
+    const quote = calculateQuote(tariffs, { ...input!, cutLengthMm: 400, pierces: 1, bbox: { width: 90, height: 70 } })
+    expect(quote.sheetLayout).toBeNull()
+    expect(quote.totalKopecks).toBeGreaterThan(0)
   })
 
   it('цена металла за тонну переводится в цену за килограмм для расчёта', () => {

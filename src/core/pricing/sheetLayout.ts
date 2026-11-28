@@ -23,7 +23,7 @@ export function calculateSheetLayout(part: PartBbox, quantity: number, settings:
   }
 
   let partsPerSheet = 0
-  if (part.width > 0 && part.height > 0) {
+  if (usableWidth > 0 && usableHeight > 0 && part.width > 0 && part.height > 0) {
     partsPerSheet = capacity(part.width, part.height)
     if (allowRotation) partsPerSheet = Math.max(partsPerSheet, capacity(part.height, part.width))
   }
