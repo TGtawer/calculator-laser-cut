@@ -193,7 +193,7 @@ describe('слои (ТЗ 3.3)', () => {
 
 describe('тексты предупреждений', () => {
   it('тексты из ТЗ', () => {
-    expect(warningMessage('OPEN_CONTOUR')).toBe('В чертеже есть незамкнутые контуры - проверьте файл')
+    expect(warningMessage('OPEN_CONTOUR')).toBe('В чертеже есть незамкнутые контуры – проверьте файл')
     expect(warningMessage('SUSPICIOUS_SIZE')).toBe('Проверьте единицы чертежа')
   })
 

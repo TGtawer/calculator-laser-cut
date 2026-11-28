@@ -60,7 +60,7 @@ function CopyButton({ text }: { text: string }) {
       </button>
       {state === 'failed' && (
         <>
-          <p className="field__hint">Не удалось скопировать автоматически - выделите текст и скопируйте вручную:</p>
+          <p className="field__hint">Не удалось скопировать автоматически – выделите текст и скопируйте вручную:</p>
           <textarea className="input copy__text" readOnly value={text} rows={12} onFocus={(e) => e.currentTarget.select()} />
         </>
       )}

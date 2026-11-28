@@ -57,7 +57,7 @@ export function PartPreview({ analysis, disabledLayers, onToggleLayer }: Props) 
     <div className="preview">
       <div className="preview__canvas">
         {empty ? (
-          <p className="preview__empty">Все слои с контурами отключены - включите нужные слои ниже</p>
+          <p className="preview__empty">Все слои с контурами отключены – включите нужные слои ниже</p>
         ) : (
           <svg viewBox={svg.viewBox} preserveAspectRatio="xMidYMid meet" role="img" aria-label="Превью детали">
             <path className="shape shape--fill" d={svg.fill} fillRule="evenodd" />
