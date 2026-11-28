@@ -88,7 +88,7 @@ describe('разбивка расчёта', () => {
     const [, , bend] = quoteLines(quote({ bending: { bendsPerPart: 2, bendLengthMm: 800 } }), tariffs.bending)
     expect(plain(bend!.detail)).toBe('2 × 55,00 ₽')
     expect(plain(bend!.amount)).toBe('110,00 ₽')
-    expect(bend!.note).toBe('Толщина «3–4 мм», длина гиба 800 мм - «от 500 до 1500 мм», тираж 20 гибов на заказ - «до 50 гибов»')
+    expect(bend!.note).toBe('Толщина «3–4 мм», длина гиба 800 мм – «от 500 до 1500 мм», тираж 20 гибов на заказ – «до 50 гибов»')
   })
 
   it('гибка «по запросу» - с причиной', () => {
@@ -98,7 +98,7 @@ describe('разбивка расчёта', () => {
       detail: '1 гиб',
       amount: 'по запросу',
       onRequest: true,
-      note: 'Гибка листа толще 8 мм - по запросу',
+      note: 'Гибка листа толще 8 мм – по запросу',
     })
   })
 
@@ -180,10 +180,10 @@ describe('текст «Скопировать расчёт»', () => {
         analysis: { bbox: { minX: 0, minY: 0, width: 50, height: 30 }, warnings: ['OPEN_CONTOUR', 'DUPLICATES_REMOVED'], duplicatesRemoved: 2 },
       }),
     )
-    expect(text).toContain('Гибка: 2 гиба - по запросу\n  Для этой толщины и длины гиба цены в прайсе нет - по запросу')
+    expect(text).toContain('Гибка: 2 гиба – по запросу\n  Для этой толщины и длины гиба цены в прайсе нет – по запросу')
     expect(text).toContain(`Итого за 10 шт.: 1 746 ₽\n${INCOMPLETE_NOTE}`)
     expect(text).toContain(
-      'Замечания к чертежу:\n- В чертеже есть незамкнутые контуры - проверьте файл\n- Удалены совпадающие дубли элементов: 2',
+      'Замечания к чертежу:\n– В чертеже есть незамкнутые контуры – проверьте файл\n– Удалены совпадающие дубли элементов: 2',
     )
     expect(text.endsWith(DISCLAIMER)).toBe(true)
   })
@@ -262,7 +262,7 @@ describe('металл в разбивке и тексте (Q-11)', () => {
       detail: '0,16 кг',
       amount: 'по запросу',
       onRequest: true,
-      note: 'Цена металла для листа 3 мм - по запросу (габарит с отступом 110 × 60 мм)',
+      note: 'Цена металла для листа 3 мм – по запросу (габарит с отступом 110 × 60 мм)',
     })
 
     const text = plain(
@@ -273,7 +273,7 @@ describe('металл в разбивке и тексте (Q-11)', () => {
         analysis: { bbox: { minX: 0, minY: 0, width: 100, height: 50 }, warnings: [], duplicatesRemoved: 0 },
       }),
     )
-    expect(text).toContain('Металл: 0,16 кг - по запросу')
+    expect(text).toContain('Металл: 0,16 кг – по запросу')
     expect(text).toContain(INCOMPLETE_NOTE)
     expect(text).not.toContain('ниже минимальной')
   })

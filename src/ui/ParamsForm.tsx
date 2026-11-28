@@ -165,7 +165,7 @@ export function ParamsForm({ tariffs, value, errors, onChange }: Props) {
               hint={
                 tariffMetalPrice !== null
                   ? `По умолчанию из прайса (${tariffMetalPrice} ₽/т), можно указать свою`
-                  : 'Если оставить пустым - «по запросу»'
+                  : 'Если оставить пустым – «по запросу»'
               }
               error={errors.metalPrice}
             >

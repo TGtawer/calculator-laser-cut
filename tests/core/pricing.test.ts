@@ -527,8 +527,8 @@ describe('гибка', () => {
   })
 
   it('пояснения «по запросу» - с границами из тарифов', () => {
-    expect(bendingOnRequestMessage('THICKNESS_OUT_OF_RANGE', tariffs.bending)).toBe('Гибка листа толще 8 мм - по запросу')
-    expect(bendingOnRequestMessage('LENGTH_OUT_OF_RANGE', tariffs.bending)).toBe('Гиб длиннее 3 200 мм - по запросу')
+    expect(bendingOnRequestMessage('THICKNESS_OUT_OF_RANGE', tariffs.bending)).toBe('Гибка листа толще 8 мм – по запросу')
+    expect(bendingOnRequestMessage('LENGTH_OUT_OF_RANGE', tariffs.bending)).toBe('Гиб длиннее 3 200 мм – по запросу')
     expect(bendingOnRequestMessage('NO_PRICE', tariffs.bending)).toContain('по запросу')
   })
 })

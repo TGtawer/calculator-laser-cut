@@ -94,12 +94,12 @@ export function bendingOnRequestMessage(reason: BendingOnRequestReason, tariffs:
   const last = <T>(items: readonly T[]): T | undefined => items[items.length - 1]
   switch (reason) {
     case 'THICKNESS_OUT_OF_RANGE':
-      return `Гибка листа толще ${formatNumber(last(tariffs.thicknessBands)?.maxThickness ?? 0)} мм - по запросу`
+      return `Гибка листа толще ${formatNumber(last(tariffs.thicknessBands)?.maxThickness ?? 0)} мм – по запросу`
     case 'LENGTH_OUT_OF_RANGE':
-      return `Гиб длиннее ${formatNumber(last(tariffs.lengthRanges)?.maxLength ?? 0)} мм - по запросу`
+      return `Гиб длиннее ${formatNumber(last(tariffs.lengthRanges)?.maxLength ?? 0)} мм – по запросу`
     case 'QUANTITY_OUT_OF_RANGE':
-      return `Тираж больше ${formatNumber(last(tariffs.quantityBrackets)?.max ?? 0)} гибов - по запросу`
+      return `Тираж больше ${formatNumber(last(tariffs.quantityBrackets)?.max ?? 0)} гибов – по запросу`
     case 'NO_PRICE':
-      return 'Для этой толщины и длины гиба цены в прайсе нет - по запросу'
+      return 'Для этой толщины и длины гиба цены в прайсе нет – по запросу'
   }
 }
