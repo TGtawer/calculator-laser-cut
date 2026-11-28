@@ -510,15 +510,10 @@ ul.alert {
   gap: 12px;
 }
 
-.metal-section {
+.metal-section,
+.sheet-size {
   display: grid;
   gap: 12px;
-}
-
-.sheet-size {
-  border-top: 1px solid var(--color-border);
-  padding-top: 10px;
-  font-size: 0.875rem;
 }
 
 .sheet-size__row {
@@ -527,31 +522,6 @@ ul.alert {
   align-items: center;
   justify-content: space-between;
   gap: 4px 12px;
-}
-
-.sheet-size__label {
-  display: block;
-  color: var(--color-muted);
-}
-
-.sheet-size__toggle {
-  min-height: 44px;
-  padding: 4px;
-  border: 0;
-  background: transparent;
-  color: var(--color-text);
-  font: inherit;
-  text-decoration: underline;
-  text-underline-offset: 3px;
-  cursor: pointer;
-}
-
-.sheet-size .params__row {
-  margin-top: 8px;
-}
-
-.sheet-size .field__label {
-  font-weight: 400;
 }
 
 .segmented {

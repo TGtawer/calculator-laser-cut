@@ -15,7 +15,7 @@ type Props = {
 
 type FieldProps = {
   label: string
-  hint?: string
+  hint?: string | undefined
   error?: string | undefined
   children: (props: { id: string; 'aria-invalid': boolean; 'aria-describedby': string | undefined }) => ReactNode
 }
@@ -167,7 +167,7 @@ export function ParamsForm({ tariffs, value, errors, onChange }: Props) {
               hint={
                 tariffMetalPrice !== null
                   ? `По умолчанию из прайса (${tariffMetalPrice} ₽/т), можно указать свою`
-                  : 'Если оставить пустым – «по запросу»'
+                  : undefined
               }
               error={errors.metalPrice}
             >
@@ -189,11 +189,16 @@ export function ParamsForm({ tariffs, value, errors, onChange }: Props) {
         <div className="sheet-size">
           <div className="sheet-size__row">
             <div>
-              <span className="sheet-size__label">Габариты листа</span>
+              <span className="field__label">Габариты листа</span>
               <span>{errors.sheetWidth || errors.sheetLength ? 'Укажите размеры' : `${value.sheetWidth} × ${value.sheetLength} мм`}</span>
             </div>
-            <button type="button" className="sheet-size__toggle" aria-expanded={sheetOpen}
-              aria-controls={sheetFieldsId} onClick={() => setSheetOpen(!sheetOpen)}>
+            <button
+              type="button"
+              className="button button--secondary"
+              aria-expanded={sheetOpen}
+              aria-controls={sheetFieldsId}
+              onClick={() => setSheetOpen(!sheetOpen)}
+            >
               {sheetOpen ? 'Свернуть' : 'Изменить габариты'}
             </button>
           </div>
